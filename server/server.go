@@ -35,7 +35,8 @@ func StartServer(env env.Env) {
 
 	s.router.Handle("/public/*", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
 	s.router.Get("/", s.handleHome)
-	s.router.Get("/search", s.handleHome)
+	s.router.Get("/code", s.handleCode)
+	s.router.Post("/search", s.handleSearch)
 
 	addr := ":" + s.env.Port
 	slog.Info("server starting", "addr", addr)

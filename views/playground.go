@@ -110,6 +110,7 @@ var _ = styles.Style(`
 	}
 	.text-input:disabled { color: #a1a5ad; background: #fcfcfd; }
 	.select-input { text-align: left; display: flex; align-items: center; justify-content: space-between; }
+	select.select-input { appearance: auto; cursor: pointer; }
 	.contents-section { margin-top: 42px; }
 	.toggle-row {
 		display: grid;
@@ -144,7 +145,7 @@ var _ = styles.Style(`
 
 func PlaygroundPage() Node {
 	return Div(Class("playground-shell"),
-		Div(Class("playground-form"),
+		Div(Class("playground-form"), Data("effect__debounce.150ms", "$query; $searchType; $deepModel; $numResults; $category; @get('/code')"),
 			HeaderBar(),
 			QueryCard(),
 			SearchTypeCard(),
@@ -173,7 +174,7 @@ func QueryCard() Node {
 			Textarea(Class("query-input"), Rows("2"), Data("bind:query", ""), Text("Latest news on Nvidia")),
 			Div(Class("query-footer"),
 				Span(),
-				Button(Type("button"), Class("primary-button"), Text("Search ↵")),
+				Button(Type("button"), Class("primary-button"), Data("on:click", "@post('/search')"), Text("Search ↵")),
 			),
 		),
 	)
@@ -188,8 +189,21 @@ func SearchTypeCard() Node {
 
 func SimpleFields() Node {
 	return Div(Class("field-stack"),
-		FieldRow("Number of results", "Max: 100. Contact us for more results.", Input(Type("text"), Value("10"), Class("text-input"))),
-		FieldRow("Result category", "", Button(Type("button"), Class("select-input"), Text("—⌄"))),
+		FieldRow("Number of results", "Max: 100. Contact us for more results.", Input(Type("text"), Value("10"), Class("text-input"), Data("bind:num-results", ""))),
+		FieldRow("Result category", "", CategorySelect()),
+	)
+}
+
+func CategorySelect() Node {
+	return Select(Class("select-input"), Data("bind:category", ""),
+		Option(Value(""), Text("—")),
+		Option(Value("company"), Selected(), Text("Company")),
+		Option(Value("research paper"), Text("Research Paper")),
+		Option(Value("news article"), Text("News Article")),
+		Option(Value("github"), Text("Github")),
+		Option(Value("personal site"), Text("Personal Site")),
+		Option(Value("people"), Text("People")),
+		Option(Value("financial report"), Text("Financial Report")),
 	)
 }
 

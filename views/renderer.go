@@ -1,10 +1,15 @@
 package views
 
 import (
+	"context"
+	"errors"
 	"io"
 	"log/slog"
+	"strings"
 
 	"exa.ai.demo/env"
+	"exa.ai.demo/exa"
+	"github.com/starfederation/datastar-go/datastar"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/components"
@@ -19,7 +24,7 @@ func NewRenderer(env env.Env) *Renderer {
 	return &Renderer{env: env}
 }
 
-func (x *Renderer) RenderHome(w io.Writer) {
+func (x *Renderer) RenderSearch(w io.Writer) {
 	renderNode(w, HTML5(HTML5Props{
 		Title:       "Search | Exa API",
 		Description: "Exa Search API playground markup",
@@ -37,7 +42,7 @@ func (x *Renderer) RenderHome(w io.Writer) {
 			JS,
 		},
 		Body: []Node{
-			Main(Data("signals", `{query: "Latest news on Nvidia", codeTab: "python", searchType: "auto"}`), PlaygroundPage()),
+			Main(Data("signals", `{query: "Latest news on Nvidia", panelTab: "code", codeTab: "python", outputTab: "json", searchType: "auto", deepModel: "deep", numResults: 10, category: "company"}`), PlaygroundPage()),
 			If(x.env.Dev, DebugSignals()),
 		},
 	}))
@@ -46,5 +51,46 @@ func (x *Renderer) RenderHome(w io.Writer) {
 func renderNode(w io.Writer, node Node) {
 	if err := node.Render(w); err != nil {
 		slog.Error("view render error", "err", err)
+	}
+}
+
+func PatchCodePanel(sse *datastar.ServerSentEventGenerator, form SearchForm) {
+	ssePatch(sse, CodePanelContent(CodePanelData{Form: form}))
+}
+
+func PatchOutputLoading(sse *datastar.ServerSentEventGenerator, form SearchForm) {
+	ssePatchSignals(sse, `{ "panelTab": "output", "outputTab": "json" }`)
+	ssePatch(sse, CodePanelContent(CodePanelData{Form: form, Loading: true}))
+}
+
+func PatchOutputJSON(sse *datastar.ServerSentEventGenerator, form SearchForm, output string) {
+	ssePatch(sse, CodePanelContent(CodePanelData{Form: form, OutputJSON: output}))
+}
+
+func PatchOutputResponse(sse *datastar.ServerSentEventGenerator, form SearchForm, output string, resp *exa.SearchResponse) {
+	ssePatch(sse, CodePanelContent(CodePanelData{Form: form, OutputJSON: output, Response: resp}))
+}
+
+func ssePatchSignals(sse *datastar.ServerSentEventGenerator, signals string) {
+	if err := sse.PatchSignals([]byte(signals)); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		slog.Error("sse.PatchSignals error", "err", err)
+	}
+}
+
+func ssePatch(sse *datastar.ServerSentEventGenerator, node Node) {
+	var sb strings.Builder
+	if err := node.Render(&sb); err != nil {
+		slog.Error("view render error", "err", err)
+		return
+	}
+
+	if err := sse.PatchElements(sb.String(), datastar.WithSelectorID("code-panel-content"), datastar.WithModeOuter()); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		slog.Error("sse.PatchElements error", "err", err)
 	}
 }

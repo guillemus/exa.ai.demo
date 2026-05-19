@@ -58,6 +58,29 @@ var _ = styles.Style(`
 	.slider-option span { color: #6d7583; font-size: 14px; }
 	.slider-option.is-active strong { color: #0f172a; }
 	.slider-option.is-active span { color: #4b5563; }
+	.deep-model-row {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		align-items: center;
+		gap: 16px;
+		margin: 24px -32px -24px;
+		padding: 20px 32px;
+		border-top: 1px solid var(--line);
+	}
+	.deep-model-buttons { display: flex; gap: 16px; }
+	.deep-model-button {
+		border: 1px solid var(--line);
+		border-radius: var(--radius-2);
+		background: white;
+		padding: 10px 20px;
+		color: #555;
+		font-weight: 600;
+	}
+	.deep-model-button.is-active {
+		border-color: var(--blue);
+		background: #eef4ff;
+		color: var(--blue);
+	}
 `)
 
 func SearchTypeSlider() Node {
@@ -78,6 +101,28 @@ func SearchTypeSlider() Node {
 			SliderOption("auto", "Auto", "1s (recommended)"),
 			SliderOption("deep", "Deep", "4s-18s"),
 		),
+		DeepModelControls(),
+	)
+}
+
+func DeepModelControls() Node {
+	return Div(Class("deep-model-row"), Data("show", "$searchType == 'deep'"), Attr("style", "display: none"),
+		Strong(Text("Deep model")),
+		Div(Class("deep-model-buttons"),
+			DeepModelButton("deep-lite"),
+			DeepModelButton("deep"),
+			DeepModelButton("deep-reasoning"),
+		),
+	)
+}
+
+func DeepModelButton(value string) Node {
+	return Button(
+		Type("button"),
+		Class("deep-model-button"),
+		Data("on:click", "$deepModel = '"+value+"'"),
+		Data("class:is-active", "$deepModel == '"+value+"'"),
+		Text(value),
 	)
 }
 
