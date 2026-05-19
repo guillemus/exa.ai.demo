@@ -36,11 +36,6 @@ var _ = styles.Style(`
 	.highlighted-code .mi, .highlighted-code .kc { color: #79c0ff; }
 	.highlighted-code .nf, .highlighted-code .n { color: #d2d7de; }
 	.highlighted-code .o, .highlighted-code .p { color: #c9d1d9; }
-	.exa-bot {
-		position: fixed; right: 28px; bottom: 28px; width: 250px; height: 58px; border-radius: var(--radius-round); background: white;
-		box-shadow: var(--shadow-6); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--size-3) 0 var(--size-5); color: #666;
-	}
-	.exa-bot button { width: 38px; height: 38px; border-radius: var(--radius-round); border: 0; color: #999; background: var(--gray-2); font-size: 20px; }
 	@media (max-width: 1100px) {
 		.code-panel { min-height: 560px; height: auto; }
 	}
@@ -99,9 +94,9 @@ func CodeTabButton(tab, icon, label string) Node {
 	return Button(
 		Type("button"),
 		Class("language-tab"),
-		Attr("data-on:click", "$codeTab = '"+tab+"'"),
-		Attr("data-class:active", "$codeTab == '"+tab+"'"),
-		Attr("data-attr:aria-selected", "$codeTab == '"+tab+"'"),
+		Data("on:click", "$codeTab = '"+tab+"'"),
+		Data("class:active", "$codeTab == '"+tab+"'"),
+		Data("attr:aria-selected", "$codeTab == '"+tab+"'"),
 		Span(Class("tab-icon"), Text(icon)),
 		Span(Text(label)),
 	)
@@ -110,7 +105,7 @@ func CodeTabButton(tab, icon, label string) Node {
 func CodeExample(tab, install, highlighted string) Node {
 	children := []Node{
 		Class("code-example"),
-		Attr("data-show", "$codeTab == '"+tab+"'"),
+		Data("show", "$codeTab == '"+tab+"'"),
 	}
 	if tab != "python" {
 		children = append(children, Attr("style", "display: none"))
@@ -120,8 +115,4 @@ func CodeExample(tab, install, highlighted string) Node {
 	}
 	children = append(children, Div(Class("highlighted-code"), Raw(highlighted)))
 	return Div(children...)
-}
-
-func ExaBotBubble() Node {
-	return Div(Class("exa-bot"), Span(Text("Ask ExaBot")), Button(Type("button"), Text("↑")))
 }

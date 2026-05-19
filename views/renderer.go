@@ -4,15 +4,19 @@ import (
 	"io"
 	"log/slog"
 
+	"exa.ai.demo/env"
+
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"
 )
 
-type Renderer struct{}
+type Renderer struct {
+	env env.Env
+}
 
-func NewRenderer() *Renderer {
-	return &Renderer{}
+func NewRenderer(env env.Env) *Renderer {
+	return &Renderer{env: env}
 }
 
 func (x *Renderer) RenderHome(w io.Writer) {
@@ -33,7 +37,8 @@ func (x *Renderer) RenderHome(w io.Writer) {
 			JS,
 		},
 		Body: []Node{
-			Main(Attr("data-signals", `{query: "Latest news on Nvidia", codeTab: "python", searchType: "auto"}`), PlaygroundPage()),
+			Main(Data("signals", `{query: "Latest news on Nvidia", codeTab: "python", searchType: "auto"}`), PlaygroundPage()),
+			If(x.env.Dev, DebugSignals()),
 		},
 	}))
 }

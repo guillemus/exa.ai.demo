@@ -28,7 +28,7 @@ func StartServer(env env.Env) {
 
 	s := &Server{
 		router:   chi.NewRouter(),
-		renderer: views.NewRenderer(),
+		renderer: views.NewRenderer(env),
 		db:       conn,
 		env:      env,
 	}
