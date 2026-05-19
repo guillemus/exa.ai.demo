@@ -26,7 +26,7 @@ var _ = styles.Style(`
 		background: var(--bg-page);
 	}
 	button, input, textarea { font: inherit; }
-	button { cursor: default; }
+	button { cursor: pointer; }
 	.playground-shell {
 		min-height: 100vh;
 		display: grid;
@@ -90,32 +90,62 @@ var _ = styles.Style(`
 		padding: var(--size-2) var(--size-3);
 		font-size: 14px;
 		background: linear-gradient(180deg, #002289, #1747ee);
-		box-shadow: inset 0 -2px 4px rgba(130,170,255,.8), var(--shadow-3);
+		box-shadow: inset 0 -1.5px 2px rgba(130,170,255,.85), 0 5px 14px rgba(23,71,238,.28);
 	}
 	.section { margin: 28px 0; }
 	.section-title, .section-heading { font-size: 18px; margin: 0 0 14px; font-weight: 600; }
 	.slider-card {
+		--slider-position: 66.666%;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-3);
-		padding: var(--size-5) var(--size-5) var(--size-4);
+		padding: 28px 32px 24px;
 	}
-	.fake-slider { position: relative; height: 20px; margin-bottom: 16px; }
+	.search-type-slider { user-select: none; touch-action: none; }
+	.slider-track {
+		position: relative;
+		height: 28px;
+		margin: 0 0 18px;
+		cursor: pointer;
+	}
 	.slider-line, .slider-fill {
-		position: absolute; left: 12px; right: 12px; top: 8px; height: 8px; border-radius: 99px;
-		background: #cfd2d8;
+		position: absolute;
+		left: 0;
+		top: 10px;
+		height: 8px;
+		border-radius: var(--radius-round);
 	}
-	.slider-fill { right: 45%; background: linear-gradient(90deg, #9dc0ff, #356bf3); }
+	.slider-line { right: 0; background: #cfd2d8; }
+	.slider-fill { width: var(--slider-position); background: linear-gradient(90deg, #9dc0ff, #356bf3); }
 	.dot {
-		position: absolute; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: #fff; transform: translateX(-50%);
+		position: absolute;
+		top: 10px;
+		width: 8px;
+		height: 8px;
+		border-radius: var(--radius-round);
+		background: white;
+		transform: translate(-50%, 0);
+		pointer-events: none;
 	}
-	.dot-1 { left: 2%; } .dot-2 { left: 25%; } .dot-3 { left: 50%; } .dot-4 { left: 98%; }
-	.dot.active {
-		top: -1px; width: 24px; height: 24px; border: 2px solid #5c84ee; background: #cddcff; box-shadow: 0 2px 7px rgba(23,71,238,.35);
+	.dot-1 { left: 0; } .dot-2 { left: 33.333%; } .dot-3 { left: 66.666%; } .dot-4 { left: 100%; }
+	.slider-thumb {
+		position: absolute;
+		left: var(--slider-position);
+		top: 2px;
+		width: 24px;
+		height: 24px;
+		border: 2px solid #5c84ee;
+		border-radius: var(--radius-round);
+		background: #cddcff;
+		box-shadow: 0 2px 7px rgba(23,71,238,.35);
+		transform: translateX(-50%);
+		pointer-events: none;
 	}
 	.slider-labels { display: grid; grid-template-columns: repeat(4, 1fr); }
-	.slider-option { display: flex; flex-direction: column; gap: 2px; }
-	.slider-option:nth-child(4) { text-align: right; }
+	.slider-option { display: flex; flex-direction: column; gap: 2px; border: 0; background: transparent; padding: 0; text-align: left; color: var(--text); }
+	.slider-option:nth-child(4) { text-align: right; align-items: flex-end; }
 	.slider-option span { color: #6d7583; font-size: 14px; }
+	.slider-option.is-active strong { color: #0f172a; }
+	.slider-option.is-active span { color: #4b5563; }
 	.field-stack { display: grid; gap: 16px; margin-bottom: 38px; }
 	.field-row {
 		display: grid;
@@ -205,27 +235,37 @@ func QueryCard() Node {
 func SearchTypeCard() Node {
 	return Section(Class("section"),
 		H2(Class("section-title"), Text("Search Type ⓘ")),
-		Div(Class("slider-card"),
-			Div(Class("fake-slider"),
+		Div(Class("slider-card search-type-slider"), Attr("data-search-type-slider", ""), Attr("data-init", "initSearchTypeSlider(el)"),
+			Input(Type("hidden"), Attr("data-bind:search-type", ""), Value("auto"), Attr("data-search-type-value", "")),
+			Div(Class("slider-track"), Attr("data-search-type-track", ""),
 				Span(Class("slider-line")),
 				Span(Class("slider-fill")),
 				Span(Class("dot dot-1")),
 				Span(Class("dot dot-2")),
-				Span(Class("dot dot-3 active")),
+				Span(Class("dot dot-3")),
 				Span(Class("dot dot-4")),
+				Span(Class("slider-thumb")),
 			),
 			Div(Class("slider-labels"),
-				SliderOption("Instant", "200ms"),
-				SliderOption("Fast", "450ms"),
-				SliderOption("Auto", "1s (recommended)"),
-				SliderOption("Deep", "4s-18s"),
+				SliderOption("instant", "Instant", "200ms"),
+				SliderOption("fast", "Fast", "450ms"),
+				SliderOption("auto", "Auto", "1s (recommended)"),
+				SliderOption("deep", "Deep", "4s-18s"),
 			),
 		),
 	)
 }
 
-func SliderOption(title string, subtitle string) Node {
-	return Div(Class("slider-option"), Strong(Text(title)), Span(Text(subtitle)))
+func SliderOption(value string, title string, subtitle string) Node {
+	return Button(
+		Type("button"),
+		Class("slider-option"),
+		Attr("data-search-type-option", value),
+		Attr("data-on:click", "$searchType = '"+value+"'"),
+		Attr("data-class:is-active", "$searchType == '"+value+"'"),
+		Strong(Text(title)),
+		Span(Text(subtitle)),
+	)
 }
 
 func SimpleFields() Node {

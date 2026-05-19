@@ -30,9 +30,10 @@ func (x *Renderer) RenderHome(w io.Writer) {
 			Link(Rel("stylesheet"), Href("/public/styles.css")),
 			Raw(`<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js"></script>`),
 			styles.Node(),
+			JS,
 		},
 		Body: []Node{
-			Main(Attr("data-signals", `{query: "Latest news on Nvidia"}`), PlaygroundPage()),
+			Main(Attr("data-signals", `{query: "Latest news on Nvidia", codeTab: "python", searchType: "auto"}`), PlaygroundPage()),
 		},
 	}))
 }
