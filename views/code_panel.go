@@ -89,6 +89,14 @@ var _ = styles.Style(`
 	.visual-output h3 { margin: 0 0 18px; font-size: 24px; color: white; }
 	.visual-output h4 { margin: 30px 0 12px; font-size: 16px; color: #d8d8d8; }
 	.output-content { color: #d6d6d6; line-height: 1.6; }
+	.output-content > :first-child { margin-top: 0; }
+	.output-content > :last-child { margin-bottom: 0; }
+	.output-content p, .output-content ul, .output-content ol { margin: 0 0 14px; }
+	.output-content ul, .output-content ol { padding-left: 24px; }
+	.output-content li { margin: 6px 0; }
+	.output-content strong { color: #fff; }
+	.output-content code { padding: 2px 5px; border-radius: 5px; background: #111; font-family: var(--font-code); }
+	.output-content a { color: #84e8ff; }
 	.result-card { border: 1px solid #3a3a3a; border-radius: var(--radius-3); background: #222; margin: 16px 0; overflow: hidden; }
 	.result-main { padding: 18px 22px 22px; }
 	.result-title { font-size: 20px; color: white; margin-bottom: 12px; }
@@ -274,7 +282,7 @@ func VisualOutput(resp *exa.SearchResponse) Node {
 func OutputContent(resp *exa.SearchResponse) Node {
 	return Div(
 		H4(Text("Output Content")),
-		Div(Class("output-content"), Text(outputContentText(resp))),
+		Div(Class("output-content"), Raw(RenderMarkdown(outputContentText(resp)))),
 	)
 }
 

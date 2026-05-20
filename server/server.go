@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"exa.ai.demo/db"
 	"exa.ai.demo/env"
 	"exa.ai.demo/views"
 
@@ -15,21 +14,13 @@ import (
 type Server struct {
 	router   chi.Router
 	renderer *views.Renderer
-	db       *db.Pool
 	env      env.Env
 }
 
-func StartServer(env env.Env) {
-	conn, err := db.Connect(env.DBPath)
-	if err != nil {
-		log.Fatalf("db: %v", err)
-	}
-	defer conn.Close()
-
+func NewHandler(env env.Env) http.Handler {
 	s := &Server{
 		router:   chi.NewRouter(),
 		renderer: views.NewRenderer(env),
-		db:       conn,
 		env:      env,
 	}
 
@@ -37,10 +28,13 @@ func StartServer(env env.Env) {
 	s.router.Get("/", s.handleHome)
 	s.router.Get("/code", s.handleCode)
 	s.router.Post("/search", s.handleSearch)
+	return s.router
+}
 
-	addr := ":" + s.env.Port
+func StartServer(env env.Env) {
+	addr := ":" + env.Port
 	slog.Info("server starting", "addr", addr)
-	if err := http.ListenAndServe(addr, s.router); err != nil {
+	if err := http.ListenAndServe(addr, NewHandler(env)); err != nil {
 		log.Fatal(err)
 	}
 }
