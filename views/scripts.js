@@ -121,6 +121,60 @@ async function copyToClipboard(text) {
 
 window.copyToClipboard = copyToClipboard
 
+/** @type {Record<string, string | number | boolean>} */
+const urlSignalDefaults = {
+    query: 'Latest news on Nvidia',
+    panelTab: 'code',
+    codeTab: 'python',
+    outputTab: 'json',
+    searchType: 'auto',
+    deepModel: 'deep',
+    numResults: 10,
+    category: 'company',
+    structuredOutputs: false,
+    streamResponse: false,
+    systemPromptEnabled: false,
+    systemPrompt: '',
+    highlights: true,
+    highlightMaxCharacters: 4000,
+    highlightQuery: '',
+    text: false,
+    textMaxCharacters: 20000,
+    maxAgeHours: '',
+    livecrawlTimeout: 10000,
+    includeDomains: '',
+    excludeDomains: '',
+    startPublishedDate: '',
+    endPublishedDate: '',
+    userLocation: '',
+}
+
+let urlSignalsReady = false
+
+/**
+ * @param {Record<string, string | number | boolean>} signals
+ * @returns {void}
+ */
+function syncSignalsToURL(signals) {
+    if (!urlSignalsReady) {
+        urlSignalsReady = true
+        return
+    }
+
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(signals)) {
+        if (String(value) === String(urlSignalDefaults[key])) continue
+        if (value === '') continue
+        params.set(key, String(value))
+    }
+
+    const query = params.toString()
+    const url = location.pathname + (query ? '?' + query : '')
+    history.replaceState(null, '', url)
+}
+
+window.syncSignalsToURL = syncSignalsToURL
+
 /**
  * @param {HTMLElement} element
  * @returns {void}

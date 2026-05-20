@@ -3,7 +3,6 @@ package views
 import (
 	"encoding/json"
 	"fmt"
-	htmlescape "html"
 	"strconv"
 	"strings"
 
@@ -35,20 +34,53 @@ var _ = styles.Style(`
 	.tab-icon { color: #8f8f8f; font-size: 15px; }
 	.language-tab.active .tab-icon { color: white; }
 	.code-example { position: relative; padding: 24px; }
-	.copy-code-button { position: absolute; top: 96px; right: 24px; z-index: 1; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--radius-2); background: #090909; color: #d8d8d8; font-size: 18px; }
+	.copy-code-button {
+		position: absolute;
+		top: 96px;
+		right: 24px;
+		z-index: 1;
+		width: 32px;
+		height: 32px;
+		display: grid;
+		place-items: center;
+		border: 0;
+		border-radius: var(--radius-2);
+		background: #090909;
+		color: #d8d8d8;
+		font-size: 18px;
+	}
 	.copy-code-button:hover { background: #161616; color: white; }
 	.install-line { margin: 0 0 24px; padding: 13px 16px; border-radius: var(--radius-2); background: var(--bg-code-soft); color: #f1f1d5; font-size: 14px; }
-	.code-block, .highlighted-code .chroma { margin: 20px 24px; padding: 18px 24px; font-size: 14px; line-height: 2.05; color: #d7d7d7; background: transparent !important; overflow: auto; }
-	.output-json { margin: 20px 24px; padding: 10px; overflow: auto; color: #d7d7d7; font-family: var(--font-code); font-size: 14px; line-height: 1.45; scrollbar-color: #3b3b3b #111; scrollbar-width: thin; }
+	.code-block, .highlighted-code .chroma {
+		margin: 20px 24px;
+		padding: 18px 24px;
+		font-size: 14px;
+		line-height: 2.05;
+		color: #d7d7d7;
+		background: transparent !important;
+		overflow: auto;
+	}
+	.output-json {
+		margin: 20px 24px;
+		padding: 10px;
+		overflow: auto;
+		color: #d7d7d7;
+		font-family: var(--font-code);
+		font-size: 14px;
+		line-height: 1.45;
+		scrollbar-color: #3b3b3b #111;
+		scrollbar-width: thin;
+	}
 	.output-json::-webkit-scrollbar { height: 10px; }
 	.output-json::-webkit-scrollbar-track { background: #111; border-radius: var(--radius-round); }
 	.output-json::-webkit-scrollbar-thumb { background: #3b3b3b; border-radius: var(--radius-round); border: 2px solid #111; }
 	.output-json::-webkit-scrollbar-thumb:hover { background: #505050; }
-	.output-json-line { white-space: pre; min-height: 1.45em; }
-	.json-string { color: #a5d6ff; }
-	.json-number { color: #79c0ff; }
-	.json-keyword { color: #ff7b72; }
-	.json-punct { color: #d2a8ff; }
+	.output-json .chroma, .output-json pre {
+		margin: 0;
+		background: transparent !important;
+		overflow: visible !important;
+		white-space: pre;
+	}
 	.code-example .highlighted-code .chroma { margin: 0; }
 	.output-loading { margin: 28px 24px; color: #d7d7d7; font-size: 15px; }
 	.visual-output { padding: 28px 24px 48px; color: #e7e7e7; font-family: var(--font-text); }
@@ -81,55 +113,74 @@ var _ = styles.Style(`
 
 type CodePanelData struct {
 	Form       SearchForm
+	PanelTab   string
+	CodeTab    string
+	OutputTab  string
 	OutputJSON string
 	Response   *exa.SearchResponse
 	Loading    bool
 }
 
-func CodePanel() Node {
-	return Aside(Class("code-panel"), CodePanelContent(CodePanelData{Form: SearchForm{}}))
+func CodePanel(state PageState) Node {
+	return Aside(Class("code-panel"), CodePanelContent(CodePanelData{
+		Form:      state.Form,
+		PanelTab:  state.PanelTab,
+		CodeTab:   state.CodeTab,
+		OutputTab: state.OutputTab,
+	}))
 }
 
 func CodePanelContent(data CodePanelData) Node {
 	return Div(ID("code-panel-content"),
 		Div(Class("code-tabs"),
-			PanelTabButton("code", "▣ Code"),
-			PanelTabButton("output", "◇ Output"),
+			PanelTabButton("code", "▣ Code", data.PanelTab),
+			PanelTabButton("output", "◇ Output", data.PanelTab),
 		),
-		Div(Data("show", "$panelTab == 'code'"),
-			Nav(Class("language-tabs"), Attr("aria-label", "Code examples"),
-				CodeTabButton("python", "♣", "Python"),
-				CodeTabButton("javascript", "⬡", "Javascript"),
-				CodeTabButton("curl", ">_", "curl"),
-			),
-			CodeExample("python", "pip install exa-py", PythonSearchCode(data.Form), HighlightCode("python", PythonSearchCode(data.Form))),
-			CodeExample("javascript", "npm install exa-js", JavaScriptSearchCode(data.Form), HighlightCode("javascript", JavaScriptSearchCode(data.Form))),
-			CodeExample("curl", "", CurlSearchCode(data.Form), HighlightCode("bash", CurlSearchCode(data.Form))),
-		),
-		Div(Data("show", "$panelTab == 'output'"), Attr("style", "display: none"),
+		Div(Data("show", "$panelTab == 'code'"), Attr("style", showStyle(data.PanelTab != "output")), CodeContent(data.Form, data.CodeTab)),
+		Div(Data("show", "$panelTab == 'output'"), Attr("style", showStyle(data.PanelTab == "output")),
 			Nav(Class("output-tabs"), Attr("aria-label", "Search output"),
-				OutputTabButton("json", "JSON"),
-				OutputTabButton("visual", "Visual"),
+				OutputTabButton("json", "JSON", data.OutputTab),
+				OutputTabButton("visual", "Visual", data.OutputTab),
 			),
 			OutputExample(data),
 		),
 	)
 }
 
-func PanelTabButton(tab, label string) Node {
+func activeTabClass(base string, active bool) string {
+	if active {
+		return base + " active"
+	}
+	return base
+}
+
+func CodeContent(form SearchForm, codeTab string) Node {
+	return Div(ID("code-panel-code"),
+		Nav(Class("language-tabs"), Attr("aria-label", "Code examples"),
+			CodeTabButton("python", "♣", "Python", codeTab),
+			CodeTabButton("javascript", "⬡", "Javascript", codeTab),
+			CodeTabButton("curl", ">_", "curl", codeTab),
+		),
+		CodeExample("python", "pip install exa-py", PythonSearchCode(form), HighlightCode("python", PythonSearchCode(form)), codeTab),
+		CodeExample("javascript", "npm install exa-js", JavaScriptSearchCode(form), HighlightCode("javascript", JavaScriptSearchCode(form)), codeTab),
+		CodeExample("curl", "", CurlSearchCode(form), HighlightCode("bash", CurlSearchCode(form)), codeTab),
+	)
+}
+
+func PanelTabButton(tab, label string, current string) Node {
 	return Button(
 		Type("button"),
-		Class("code-tab"),
+		Class(activeTabClass("code-tab", current == tab)),
 		Data("on:click", "$panelTab = '"+tab+"'"),
 		Data("class:active", "$panelTab == '"+tab+"'"),
 		Text(label),
 	)
 }
 
-func CodeTabButton(tab, icon, label string) Node {
+func CodeTabButton(tab, icon, label string, current string) Node {
 	return Button(
 		Type("button"),
-		Class("language-tab"),
+		Class(activeTabClass("language-tab", current == tab)),
 		Data("on:click", "$codeTab = '"+tab+"'"),
 		Data("class:active", "$codeTab == '"+tab+"'"),
 		Data("attr:aria-selected", "$codeTab == '"+tab+"'"),
@@ -138,12 +189,12 @@ func CodeTabButton(tab, icon, label string) Node {
 	)
 }
 
-func CodeExample(tab, install, code, highlighted string) Node {
+func CodeExample(tab, install, code, highlighted string, current string) Node {
 	children := []Node{
 		Class("code-example"),
 		Data("show", "$codeTab == '"+tab+"'"),
 	}
-	if tab != "python" {
+	if current != tab {
 		children = append(children, Attr("style", "display: none"))
 	}
 	if install != "" {
@@ -156,10 +207,10 @@ func CodeExample(tab, install, code, highlighted string) Node {
 	return Div(children...)
 }
 
-func OutputTabButton(tab, label string) Node {
+func OutputTabButton(tab, label string, current string) Node {
 	return Button(
 		Type("button"),
-		Class("output-tab"),
+		Class(activeTabClass("output-tab", current == tab)),
 		Data("on:click", "$outputTab = '"+tab+"'"),
 		Data("class:active", "$outputTab == '"+tab+"'"),
 		Text(label),
@@ -168,12 +219,12 @@ func OutputTabButton(tab, label string) Node {
 
 func OutputExample(data CodePanelData) Node {
 	return Div(
-		Div(Data("show", "$outputTab == 'json'"),
+		Div(Data("show", "$outputTab == 'json'"), Attr("style", showStyle(data.OutputTab != "visual")),
 			If(data.Loading, Div(Class("output-loading"), Text("Searching Exa…"))),
 			Iff(!data.Loading && data.OutputJSON != "", func() Node { return OutputJSON(data.OutputJSON) }),
 			If(!data.Loading && data.OutputJSON == "", OutputEmptyState()),
 		),
-		Div(Data("show", "$outputTab == 'visual'"), Attr("style", "display: none"),
+		Div(Data("show", "$outputTab == 'visual'"), Attr("style", showStyle(data.OutputTab == "visual")),
 			If(data.Loading, Div(Class("output-loading"), Text("Searching Exa…"))),
 			Iff(!data.Loading && data.Response != nil, func() Node { return VisualOutput(data.Response) }),
 			If(!data.Loading && data.Response == nil, OutputEmptyState()),
@@ -181,72 +232,15 @@ func OutputExample(data CodePanelData) Node {
 	)
 }
 
-func OutputJSON(output string) Node {
-	lines := strings.Split(output, "\n")
-	return Div(Class("output-json"), Group(Map(lines, func(line string) Node {
-		return Div(Class("output-json-line"), Raw(highlightJSONLine(line)))
-	})))
+func showStyle(show bool) string {
+	if show {
+		return ""
+	}
+	return "display: none"
 }
 
-func highlightJSONLine(line string) string {
-	var b strings.Builder
-	for i := 0; i < len(line); {
-		c := line[i]
-		if c == '"' {
-			end := i + 1
-			for end < len(line) {
-				if line[end] == '\\' {
-					end += 2
-					continue
-				}
-				if line[end] == '"' {
-					end++
-					break
-				}
-				end++
-			}
-			b.WriteString(`<span class="json-string">`)
-			b.WriteString(htmlescape.EscapeString(line[i:end]))
-			b.WriteString(`</span>`)
-			i = end
-			continue
-		}
-		if strings.ContainsRune("{}[]:,", rune(c)) {
-			b.WriteString(`<span class="json-punct">`)
-			b.WriteByte(c)
-			b.WriteString(`</span>`)
-			i++
-			continue
-		}
-		if c == '-' || c >= '0' && c <= '9' {
-			end := i + 1
-			for end < len(line) && strings.ContainsRune("0123456789.eE+-", rune(line[end])) {
-				end++
-			}
-			b.WriteString(`<span class="json-number">`)
-			b.WriteString(htmlescape.EscapeString(line[i:end]))
-			b.WriteString(`</span>`)
-			i = end
-			continue
-		}
-		matched := false
-		for _, keyword := range []string{"true", "false", "null"} {
-			if strings.HasPrefix(line[i:], keyword) {
-				b.WriteString(`<span class="json-keyword">`)
-				b.WriteString(keyword)
-				b.WriteString(`</span>`)
-				i += len(keyword)
-				matched = true
-				break
-			}
-		}
-		if matched {
-			continue
-		}
-		b.WriteString(htmlescape.EscapeString(line[i : i+1]))
-		i++
-	}
-	return b.String()
+func OutputJSON(output string) Node {
+	return Div(Class("output-json"), Raw(HighlightCodeNoLines("json", output)))
 }
 
 func OutputEmptyState() Node {

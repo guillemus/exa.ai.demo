@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
-	s.renderer.RenderSearch(w)
+	s.renderer.RenderSearch(w, r)
 }
 
 func (s *Server) handleCode(w http.ResponseWriter, r *http.Request) {

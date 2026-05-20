@@ -147,17 +147,95 @@ var _ = styles.Style(`
 	.advanced-button { border: 0; background: transparent; color: #6d737c; padding: 18px 0; font-size: 15px; }
 `)
 
-func PlaygroundPage() Node {
-	return Div(Class("playground-shell"),
-		Div(Class("playground-form"), Data("effect__debounce.150ms", "$query; $searchType; $deepModel; $numResults; $category; $structuredOutputs; $streamResponse; $systemPromptEnabled; $systemPrompt; $highlights; $highlightMaxCharacters; $highlightQuery; $text; $textMaxCharacters; $maxAgeHours; $livecrawlTimeout; $includeDomains; $excludeDomains; $startPublishedDate; $endPublishedDate; $userLocation; @get('/code')"),
+const urlSignalsEffect = `
+	$query;
+	$panelTab;
+	$codeTab;
+	$outputTab;
+	$searchType;
+	$deepModel;
+	$numResults;
+	$category;
+	$structuredOutputs;
+	$streamResponse;
+	$systemPromptEnabled;
+	$systemPrompt;
+	$highlights;
+	$highlightMaxCharacters;
+	$highlightQuery;
+	$text;
+	$textMaxCharacters;
+	$maxAgeHours;
+	$livecrawlTimeout;
+	$includeDomains;
+	$excludeDomains;
+	$startPublishedDate;
+	$endPublishedDate;
+	$userLocation;
+	syncSignalsToURL({
+		query: $query,
+		panelTab: $panelTab,
+		codeTab: $codeTab,
+		outputTab: $outputTab,
+		searchType: $searchType,
+		deepModel: $deepModel,
+		numResults: $numResults,
+		category: $category,
+		structuredOutputs: $structuredOutputs,
+		streamResponse: $streamResponse,
+		systemPromptEnabled: $systemPromptEnabled,
+		systemPrompt: $systemPrompt,
+		highlights: $highlights,
+		highlightMaxCharacters: $highlightMaxCharacters,
+		highlightQuery: $highlightQuery,
+		text: $text,
+		textMaxCharacters: $textMaxCharacters,
+		maxAgeHours: $maxAgeHours,
+		livecrawlTimeout: $livecrawlTimeout,
+		includeDomains: $includeDomains,
+		excludeDomains: $excludeDomains,
+		startPublishedDate: $startPublishedDate,
+		endPublishedDate: $endPublishedDate,
+		userLocation: $userLocation
+	})
+`
+
+const codeRefreshEffect = `
+	$query;
+	$searchType;
+	$deepModel;
+	$numResults;
+	$category;
+	$structuredOutputs;
+	$streamResponse;
+	$systemPromptEnabled;
+	$systemPrompt;
+	$highlights;
+	$highlightMaxCharacters;
+	$highlightQuery;
+	$text;
+	$textMaxCharacters;
+	$maxAgeHours;
+	$livecrawlTimeout;
+	$includeDomains;
+	$excludeDomains;
+	$startPublishedDate;
+	$endPublishedDate;
+	$userLocation;
+	@get('/code')
+`
+
+func PlaygroundPage(state PageState) Node {
+	return Div(Class("playground-shell"), Data("effect__debounce.150ms", urlSignalsEffect),
+		Div(Class("playground-form"), Data("effect__debounce.150ms", codeRefreshEffect),
 			HeaderBar(),
-			QueryCard(),
-			SearchTypeCard(),
-			SimpleFields(),
-			ContentsSection(),
-			FiltersSection(),
+			QueryCard(state.Form),
+			SearchTypeCard(state.Form),
+			SimpleFields(state.Form),
+			ContentsSection(state.Form),
+			FiltersSection(state.Form),
 		),
-		CodePanel(),
+		CodePanel(state),
 	)
 }
 
@@ -172,11 +250,11 @@ func HeaderBar() Node {
 	)
 }
 
-func QueryCard() Node {
+func QueryCard(form SearchForm) Node {
 	return Section(Class("query-block"),
 		Label(Class("field-label"), Text("Query")),
 		Div(Class("query-card"),
-			Textarea(Class("query-input"), Rows("2"), Data("bind:query", ""), Text("Latest news on Nvidia")),
+			Textarea(Class("query-input"), Rows("2"), Data("bind:query", ""), Text(form.Query)),
 			Div(Class("query-footer"),
 				Span(),
 				Button(Type("button"), Class("primary-button"), Data("on:click", "@post('/search')"), Text("Search ↵")),
@@ -185,74 +263,156 @@ func QueryCard() Node {
 	)
 }
 
-func SearchTypeCard() Node {
+func SearchTypeCard(form SearchForm) Node {
 	return Section(Class("section"),
 		H2(Class("section-title"), Text("Search Type ⓘ")),
-		SearchTypeSlider(),
+		SearchTypeSlider(form),
 	)
 }
 
-func SimpleFields() Node {
+func SimpleFields(form SearchForm) Node {
 	return Div(Class("field-stack"),
-		FieldRow("Number of results", "Max: 100. Contact us for more results.", Input(Type("text"), Value("10"), Class("text-input"), Data("bind:num-results", ""))),
-		FieldRow("Result category", "", CategorySelect()),
+		FieldRow("Number of results", "Max: 100. Contact us for more results.", Input(
+			Type("text"),
+			Value(strconv.Itoa(int(form.NumResults))),
+			Class("text-input"),
+			Data("bind:num-results", ""),
+		)),
+		FieldRow("Result category", "", CategorySelect(form.Category)),
 	)
 }
 
-func CategorySelect() Node {
+func CategorySelect(category string) Node {
 	return Select(Class("select-input"), Data("bind:category", ""),
-		Option(Value(""), Text("—")),
-		Option(Value("company"), Selected(), Text("Company")),
-		Option(Value("research paper"), Text("Research Paper")),
-		Option(Value("news article"), Text("News Article")),
-		Option(Value("github"), Text("Github")),
-		Option(Value("personal site"), Text("Personal Site")),
-		Option(Value("people"), Text("People")),
-		Option(Value("financial report"), Text("Financial Report")),
+		CategoryOption(category, "", "—"),
+		CategoryOption(category, "company", "Company"),
+		CategoryOption(category, "research paper", "Research Paper"),
+		CategoryOption(category, "news article", "News Article"),
+		CategoryOption(category, "github", "Github"),
+		CategoryOption(category, "personal site", "Personal Site"),
+		CategoryOption(category, "people", "People"),
+		CategoryOption(category, "financial report", "Financial Report"),
 	)
 }
 
-func ContentsSection() Node {
+func CategoryOption(current string, value string, label string) Node {
+	return Option(Value(value), If(current == value, Selected()), Text(label))
+}
+
+func ContentsSection(form SearchForm) Node {
 	return Section(Class("section contents-section"),
 		H2(Class("section-heading"), Text("Contents")),
-		ToggleRow("Structured outputs", "Return structured outputs in addition to search results.", "structuredOutputs"),
-		StructuredOutputFields(),
-		ToggleRow("Highlights", "Token efficient page excerpts", "highlights"),
-		NestedFields("highlights",
-			FieldRow("Max characters", "", Input(Type("text"), Placeholder("Default: 4000"), Class("text-input"), Data("bind:highlight-max-characters", ""), Data("attr:disabled", "!$highlights"))),
-			FieldRow("Guiding query ⓘ", "", Input(Type("text"), Placeholder("e.g. key takeaways"), Class("text-input"), Data("bind:highlight-query", ""), Data("attr:disabled", "!$highlights"))),
+		ToggleRow("Structured outputs", "Return structured outputs in addition to search results.", "structuredOutputs", form.StructuredOutputs),
+		StructuredOutputFields(form),
+		ToggleRow("Highlights", "Token efficient page excerpts", "highlights", form.Highlights),
+		NestedFields("highlights", form.Highlights,
+			FieldRow("Max characters", "", Input(
+				Type("text"),
+				Placeholder("Default: 4000"),
+				Class("text-input"),
+				Value(strconv.Itoa(int(form.HighlightMaxCharacters))),
+				Data("bind:highlight-max-characters", ""),
+				Data("attr:disabled", "!$highlights"),
+				If(!form.Highlights, Disabled()),
+			)),
+			FieldRow("Guiding query ⓘ", "", Input(
+				Type("text"),
+				Placeholder("e.g. key takeaways"),
+				Class("text-input"),
+				Value(form.HighlightQuery),
+				Data("bind:highlight-query", ""),
+				Data("attr:disabled", "!$highlights"),
+				If(!form.Highlights, Disabled()),
+			)),
 		),
-		ToggleRow("Full webpage text", "", "text"),
-		NestedFields("text",
-			FieldRow("Max characters", "", Input(Type("text"), Value("20,000"), Data("bind:text-max-characters", ""), Data("attr:disabled", "!$text"), Class("text-input"))),
+		ToggleRow("Full webpage text", "", "text", form.Text),
+		NestedFields("text", form.Text,
+			FieldRow("Max characters", "", Input(
+				Type("text"),
+				Value(strconv.Itoa(int(form.TextMaxCharacters))),
+				Data("bind:text-max-characters", ""),
+				Data("attr:disabled", "!$text"),
+				If(!form.Text, Disabled()),
+				Class("text-input"),
+			)),
 		),
 		Div(Class("subsection"),
 			Div(Class("copy"), Strong(Text("Livecrawl")), P(Class("muted"), Text("Manage content freshness"))),
-			NestedFields("",
-				FieldRow("Max age ⓘ", "", UnitInput("Default: cache only", "hr", "max-age-hours")),
-				FieldRow("Livecrawl timeout ⓘ", "", UnitInput("Max: 30000", "ms", "livecrawl-timeout")),
+			NestedFields("", true,
+				FieldRow("Max age ⓘ", "", UnitInput(
+					"Default: cache only",
+					"hr",
+					"max-age-hours",
+					signalIntValue(form.MaxAgeHours),
+				)),
+				FieldRow("Livecrawl timeout ⓘ", "", UnitInput(
+					"Max: 30000",
+					"ms",
+					"livecrawl-timeout",
+					strconv.Itoa(int(form.LivecrawlTimeout)),
+				)),
 			),
 		),
 		Button(Type("button"), Class("advanced-button"), Text("› Advanced Options")),
 	)
 }
 
-func StructuredOutputFields() Node {
-	return Div(Class("nested-fields"), Data("show", "$structuredOutputs"), Attr("style", "display: none"),
-		ToggleRow("Stream response", "Return OpenAI-compatible SSE chunks as they arrive.", "streamResponse"),
-		ToggleRow("System prompt", "Instructions for synthesized output.", "systemPromptEnabled"),
-		FieldRow("Prompt", "", Textarea(Class("text-input prompt-input"), Rows("3"), Data("bind:system-prompt", ""), Data("attr:disabled", "!$systemPromptEnabled"))),
+func StructuredOutputFields(form SearchForm) Node {
+	style := "display: none"
+	if form.StructuredOutputs {
+		style = ""
+	}
+	return Div(Class("nested-fields"), Data("show", "$structuredOutputs"), Attr("style", style),
+		ToggleRow("Stream response", "Return OpenAI-compatible SSE chunks as they arrive.", "streamResponse", form.StreamResponse),
+		ToggleRow("System prompt", "Instructions for synthesized output.", "systemPromptEnabled", form.SystemPromptEnabled),
+		FieldRow("Prompt", "", Textarea(
+			Class("text-input prompt-input"),
+			Rows("3"),
+			Data("bind:system-prompt", ""),
+			Data("attr:disabled", "!$systemPromptEnabled"),
+			If(!form.SystemPromptEnabled, Disabled()),
+			Text(form.SystemPrompt),
+		)),
 	)
 }
 
-func FiltersSection() Node {
+func FiltersSection(form SearchForm) Node {
 	return Section(Class("section filters-section"),
 		H2(Class("section-heading"), Text("Filters")),
-		FieldRow("Include domains", "", Input(Type("text"), Placeholder("e.g. exa.ai, docs.exa.ai/reference"), Class("text-input"), Data("bind:include-domains", ""))),
-		FieldRow("Exclude domains", "", Input(Type("text"), Placeholder("e.g. reddit.com, twitter.com"), Class("text-input"), Data("bind:exclude-domains", ""))),
-		FieldRow("Published after", "", Input(Type("date"), Class("text-input"), Data("bind:start-published-date", ""))),
-		FieldRow("Published before", "", Input(Type("date"), Class("text-input"), Data("bind:end-published-date", ""))),
-		FieldRow("User location", "Two-letter ISO country code", Input(Type("text"), Placeholder("US"), MaxLength("2"), Class("text-input"), Data("bind:user-location", ""))),
+		FieldRow("Include domains", "", Input(
+			Type("text"),
+			Value(form.IncludeDomains),
+			Placeholder("e.g. exa.ai, docs.exa.ai/reference"),
+			Class("text-input"),
+			Data("bind:include-domains", ""),
+		)),
+		FieldRow("Exclude domains", "", Input(
+			Type("text"),
+			Value(form.ExcludeDomains),
+			Placeholder("e.g. reddit.com, twitter.com"),
+			Class("text-input"),
+			Data("bind:exclude-domains", ""),
+		)),
+		FieldRow("Published after", "", Input(
+			Type("date"),
+			Value(form.StartPublishedDate),
+			Class("text-input"),
+			Data("bind:start-published-date", ""),
+		)),
+		FieldRow("Published before", "", Input(
+			Type("date"),
+			Value(form.EndPublishedDate),
+			Class("text-input"),
+			Data("bind:end-published-date", ""),
+		)),
+		FieldRow("User location", "Two-letter ISO country code", Input(
+			Type("text"),
+			Value(form.UserLocation),
+			Placeholder("US"),
+			MaxLength("2"),
+			Class("text-input"),
+			Data("bind:user-location", ""),
+		)),
 	)
 }
 
@@ -266,25 +426,29 @@ func FieldRow(label string, description string, control Node) Node {
 	)
 }
 
-func ToggleRow(title string, description string, signal string) Node {
+func ToggleRow(title string, description string, signal string, on bool) Node {
 	return Div(Class("toggle-row"),
 		Div(Class("copy"), Strong(Text(title)), If(description != "", P(Class("muted"), Text(description)))),
-		Toggle(signal),
+		Toggle(signal, on),
 	)
 }
 
-func Toggle(signal string) Node {
+func Toggle(signal string, on bool) Node {
 	return Button(
 		Type("button"),
-		Class("toggle"),
+		Class(toggleClass(on)),
 		Data("on:click", "$"+signal+" = !$"+signal),
 		Data("class:is-on", "$"+signal),
 		Span(),
 	)
 }
 
-func NestedFields(signal string, nodes ...Node) Node {
-	attrs := []Node{Class("nested-fields")}
+func NestedFields(signal string, enabled bool, nodes ...Node) Node {
+	class := "nested-fields"
+	if signal != "" && !enabled {
+		class += " disabled-nest"
+	}
+	attrs := []Node{Class(class)}
 	if signal != "" {
 		attrs = append(attrs, Data("class:disabled-nest", "!$"+signal))
 	}
@@ -292,6 +456,20 @@ func NestedFields(signal string, nodes ...Node) Node {
 	return Div(attrs...)
 }
 
-func UnitInput(placeholder string, unit string, signal string) Node {
-	return Div(Class("unit-input"), Input(Type("text"), Placeholder(placeholder), Class("text-input"), Data("bind:"+signal, "")), Span(Text(unit)))
+func toggleClass(on bool) string {
+	if on {
+		return "toggle is-on"
+	}
+	return "toggle"
+}
+
+func UnitInput(placeholder string, unit string, signal string, value string) Node {
+	return Div(Class("unit-input"), Input(Type("text"), Value(value), Placeholder(placeholder), Class("text-input"), Data("bind:"+signal, "")), Span(Text(unit)))
+}
+
+func signalIntValue(value SignalInt) string {
+	if value == 0 {
+		return ""
+	}
+	return strconv.Itoa(int(value))
 }

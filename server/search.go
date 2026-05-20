@@ -56,9 +56,11 @@ func splitList(value string) []string {
 }
 
 func marshalJSON(v any) string {
-	bs, err := json.Marshal(v)
+	bs, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		return `{"error":"Unable to format Exa response"}`
+		return `{
+  "error": "Unable to format Exa response"
+}`
 	}
 	return string(bs)
 }

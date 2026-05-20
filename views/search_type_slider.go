@@ -53,7 +53,19 @@ var _ = styles.Style(`
 		pointer-events: none;
 	}
 	.slider-labels { position: relative; height: 42px; }
-	.slider-option { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: transparent; padding: 0; text-align: center; color: var(--text); transform: translateX(-50%); }
+	.slider-option {
+		position: absolute;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+		border: 0;
+		background: transparent;
+		padding: 0;
+		text-align: center;
+		color: var(--text);
+		transform: translateX(-50%);
+	}
 	.slider-option:nth-child(1) { left: 0; align-items: flex-start; text-align: left; transform: none; }
 	.slider-option:nth-child(2) { left: 25%; }
 	.slider-option:nth-child(3) { left: 50%; }
@@ -86,9 +98,14 @@ var _ = styles.Style(`
 	}
 `)
 
-func SearchTypeSlider() Node {
-	return Div(Class("slider-card search-type-slider"), Data("search-type-slider", ""), Data("init", "initSearchTypeSlider(el)"),
-		Input(Type("hidden"), Data("bind:search-type", ""), Value("auto"), Data("search-type-value", "")),
+func SearchTypeSlider(form SearchForm) Node {
+	return Div(
+		Class("slider-card search-type-slider"),
+		Attr("style", "--slider-position: "+searchTypePosition(form.SearchType)),
+		Data("search-type-slider", ""),
+		Data("init", "initSearchTypeSlider(el)"),
+		Data("effect", "setSearchTypeValue(el, $searchType, true)"),
+		Input(Type("hidden"), Value(form.SearchType), Data("bind:search-type", ""), Data("search-type-value", "")),
 		Div(Class("slider-track"), Data("search-type-track", ""),
 			Span(Class("slider-line")),
 			Span(Class("slider-fill")),
@@ -99,44 +116,69 @@ func SearchTypeSlider() Node {
 			Span(Class("slider-thumb")),
 		),
 		Div(Class("slider-labels"),
-			SliderOption("instant", "Instant", "200ms"),
-			SliderOption("fast", "Fast", "450ms"),
-			SliderOption("auto", "Auto", "1s (recommended)"),
-			SliderOption("deep", "Deep", "4s-18s"),
+			SliderOption("instant", "Instant", "200ms", form.SearchType),
+			SliderOption("fast", "Fast", "450ms", form.SearchType),
+			SliderOption("auto", "Auto", "1s (recommended)", form.SearchType),
+			SliderOption("deep", "Deep", "4s-18s", form.SearchType),
 		),
-		DeepModelControls(),
+		DeepModelControls(form),
 	)
 }
 
-func DeepModelControls() Node {
-	return Div(Class("deep-model-row"), Data("show", "$searchType == 'deep'"), Attr("style", "display: none"),
+func searchTypePosition(searchType string) string {
+	switch searchType {
+	case "instant":
+		return "0%"
+	case "fast":
+		return "25%"
+	case "auto", "":
+		return "50%"
+	case "deep":
+		return "100%"
+	}
+	return "50%"
+}
+
+func DeepModelControls(form SearchForm) Node {
+	style := "display: none"
+	if form.SearchType == searchTypeDeep {
+		style = ""
+	}
+	return Div(Class("deep-model-row"), Data("show", "$searchType == 'deep'"), Attr("style", style),
 		Strong(Text("Deep model")),
 		Div(Class("deep-model-buttons"),
-			DeepModelButton("deep-lite"),
-			DeepModelButton("deep"),
-			DeepModelButton("deep-reasoning"),
+			DeepModelButton("deep-lite", form.DeepModel),
+			DeepModelButton("deep", form.DeepModel),
+			DeepModelButton("deep-reasoning", form.DeepModel),
 		),
 	)
 }
 
-func DeepModelButton(value string) Node {
+func DeepModelButton(value string, current string) Node {
 	return Button(
 		Type("button"),
-		Class("deep-model-button"),
+		Class(activeClass("deep-model-button", current == value)),
 		Data("on:click", "$deepModel = '"+value+"'"),
 		Data("class:is-active", "$deepModel == '"+value+"'"),
 		Text(value),
 	)
 }
 
-func SliderOption(value string, title string, subtitle string) Node {
+func SliderOption(value string, title string, subtitle string, current string) Node {
 	return Button(
 		Type("button"),
-		Class("slider-option"),
+		Class(activeClass("slider-option", current == value)),
 		Data("search-type-option", value),
 		Data("on:click", "$searchType = '"+value+"'"),
 		Data("class:is-active", "$searchType == '"+value+"'"),
 		Strong(Text(title)),
 		Span(Text(subtitle)),
 	)
+}
+
+func activeClass(base string, active bool) string {
+	if active {
+		return base + " is-active"
+	}
+	return base
 }

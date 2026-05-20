@@ -35,6 +35,8 @@ func (x *SignalInt) UnmarshalJSON(bs []byte) error {
 
 type SearchForm struct {
 	Query                  string    `json:"query"`
+	CodeTab                string    `json:"codeTab"`
+	OutputTab              string    `json:"outputTab"`
 	SearchType             string    `json:"searchType"`
 	NumResults             SignalInt `json:"numResults"`
 	Category               string    `json:"category"`
@@ -60,6 +62,12 @@ type SearchForm struct {
 func (f SearchForm) WithDefaults() SearchForm {
 	if f.Query == "" {
 		f.Query = "Latest news on Nvidia"
+	}
+	if f.CodeTab == "" {
+		f.CodeTab = "python"
+	}
+	if f.OutputTab == "" {
+		f.OutputTab = "json"
 	}
 	if f.SearchType == "" {
 		f.SearchType = "auto"
