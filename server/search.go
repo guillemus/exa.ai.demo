@@ -24,6 +24,12 @@ func exaSearchRequest(form views.SearchForm) *exa.SearchRequest {
 	if form.UsesOutputSchema() {
 		req.OutputSchema = map[string]any{"type": "text"}
 	}
+	if form.UsesSystemPrompt() {
+		req.SystemPrompt = form.SystemPrompt
+	}
+	if form.UsesStreaming() {
+		req.Stream = true
+	}
 	req.Contents = &exa.ContentsOptions{
 		LivecrawlTimeout: int(form.LivecrawlTimeout),
 		MaxAgeHours:      int(form.MaxAgeHours),
@@ -50,9 +56,29 @@ func splitList(value string) []string {
 }
 
 func marshalJSON(v any) string {
-	bs, err := json.MarshalIndent(v, "", "  ")
+	bs, err := json.Marshal(v)
 	if err != nil {
 		return `{"error":"Unable to format Exa response"}`
 	}
 	return string(bs)
+}
+
+func marshalStreamChunks(chunks []exa.SearchStreamChunk) string {
+	parts := make([]string, 0, len(chunks))
+	for _, chunk := range chunks {
+		bs, err := json.Marshal(chunk)
+		if err != nil {
+			return `{"error":"Unable to format Exa stream"}`
+		}
+		parts = append(parts, string(bs))
+	}
+	return strings.Join(parts, "\n")
+}
+
+func streamChunkContent(chunk exa.SearchStreamChunk) string {
+	var b strings.Builder
+	for _, choice := range chunk.Choices {
+		b.WriteString(choice.Delta.Content)
+	}
+	return b.String()
 }

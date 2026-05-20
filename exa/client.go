@@ -1,8 +1,15 @@
 package exa
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -49,6 +56,77 @@ func (c *Client) Search(ctx context.Context, req *SearchRequest) (*SearchRespons
 	}
 
 	return &resp, nil
+}
+
+func (c *Client) StreamSearch(ctx context.Context, req *SearchRequest, onChunk func(SearchStreamChunk) error) error {
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(req); err != nil {
+		return fmt.Errorf("encode stream search request: %w", err)
+	}
+
+	hreq, err := http.NewRequestWithContext(ctx, http.MethodPost, DefaultBaseURL+"/search", &body)
+	if err != nil {
+		return fmt.Errorf("create stream search request: %w", err)
+	}
+	hreq.Header.Set("x-api-key", c.apiKey)
+	hreq.Header.Set("Content-Type", "application/json")
+	hreq.Header.Set("Accept", "text/event-stream")
+
+	resp, err := http.DefaultClient.Do(hreq)
+	if err != nil {
+		return fmt.Errorf("stream search request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		bs, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("stream search request failed with status %d: %s", resp.StatusCode, string(bs))
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	dataLines := []string{}
+	flush := func() error {
+		if len(dataLines) == 0 {
+			return nil
+		}
+		data := strings.TrimSpace(strings.Join(dataLines, "\n"))
+		dataLines = dataLines[:0]
+		if data == "[DONE]" {
+			return io.EOF
+		}
+		var chunk SearchStreamChunk
+		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+			return fmt.Errorf("decode stream search chunk: %w", err)
+		}
+		if err := onChunk(chunk); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	for scanner.Scan() {
+		line := strings.TrimSuffix(scanner.Text(), "\r")
+		if line == "" {
+			if err := flush(); err != nil {
+				if errors.Is(err, io.EOF) {
+					return nil
+				}
+				return err
+			}
+			continue
+		}
+		if after, ok := strings.CutPrefix(line, "data:"); ok {
+			dataLines = append(dataLines, after)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read stream search response: %w", err)
+	}
+	if err := flush(); err != nil && !errors.Is(err, io.EOF) {
+		return err
+	}
+	return nil
 }
 
 // FindSimilar finds similar links to the provided URL.

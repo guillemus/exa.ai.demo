@@ -40,6 +40,9 @@ type SearchForm struct {
 	Category               string    `json:"category"`
 	DeepModel              string    `json:"deepModel"`
 	StructuredOutputs      bool      `json:"structuredOutputs"`
+	StreamResponse         bool      `json:"streamResponse"`
+	SystemPromptEnabled    bool      `json:"systemPromptEnabled"`
+	SystemPrompt           string    `json:"systemPrompt"`
 	Highlights             bool      `json:"highlights"`
 	HighlightMaxCharacters SignalInt `json:"highlightMaxCharacters"`
 	HighlightQuery         string    `json:"highlightQuery"`
@@ -94,6 +97,14 @@ func (f SearchForm) UsesOutputSchema() bool {
 	return f.StructuredOutputs || strings.HasPrefix(f.EffectiveSearchType(), searchTypeDeep)
 }
 
+func (f SearchForm) UsesStreaming() bool {
+	return f.StructuredOutputs && f.StreamResponse
+}
+
+func (f SearchForm) UsesSystemPrompt() bool {
+	return f.StructuredOutputs && f.SystemPromptEnabled && f.SystemPrompt != ""
+}
+
 func PythonSearchCode(f SearchForm) string {
 	f = f.WithDefaults()
 
@@ -111,6 +122,7 @@ func PythonSearchCode(f SearchForm) string {
 		b.WriteString("        \"type\": \"text\"\n")
 		b.WriteString("    },\n")
 	}
+	writePythonSynthesis(&b, f)
 	writePythonContents(&b, f)
 	b.WriteString("    type = " + strconv.Quote(f.EffectiveSearchType()) + "\n")
 	b.WriteString(")")
@@ -133,6 +145,7 @@ func JavaScriptSearchCode(f SearchForm) string {
 		b.WriteString("    type: \"text\",\n")
 		b.WriteString("  },\n")
 	}
+	writeJavaScriptSynthesis(&b, f)
 	writeJavaScriptContents(&b, f)
 	b.WriteString("  type: " + strconv.Quote(f.EffectiveSearchType()) + ",\n")
 	b.WriteString("});")
@@ -146,6 +159,9 @@ func CurlSearchCode(f SearchForm) string {
 	b.WriteString("curl https://api.exa.ai/search \\\n")
 	b.WriteString("  --request POST \\\n")
 	b.WriteString("  --header \"Content-Type: application/json\" \\\n")
+	if f.UsesStreaming() {
+		b.WriteString("  --header \"Accept: text/event-stream\" \\\n")
+	}
 	b.WriteString("  --header \"x-api-key: 47908a******************************\" \\\n")
 	b.WriteString("  --data '{\n")
 	b.WriteString("    \"query\": " + strconv.Quote(f.Query) + ",\n")
@@ -157,10 +173,38 @@ func CurlSearchCode(f SearchForm) string {
 		b.WriteString("      \"type\": \"text\"\n")
 		b.WriteString("    },\n")
 	}
+	writeCurlSynthesis(&b, f)
 	writeCurlContents(&b, f)
 	b.WriteString("    \"type\": " + strconv.Quote(f.EffectiveSearchType()) + "\n")
 	b.WriteString("  }'")
 	return b.String()
+}
+
+func writePythonSynthesis(b *strings.Builder, f SearchForm) {
+	if f.UsesSystemPrompt() {
+		b.WriteString("    system_prompt = " + strconv.Quote(f.SystemPrompt) + ",\n")
+	}
+	if f.UsesStreaming() {
+		b.WriteString("    stream = True,\n")
+	}
+}
+
+func writeJavaScriptSynthesis(b *strings.Builder, f SearchForm) {
+	if f.UsesSystemPrompt() {
+		b.WriteString("  systemPrompt: " + strconv.Quote(f.SystemPrompt) + ",\n")
+	}
+	if f.UsesStreaming() {
+		b.WriteString("  stream: true,\n")
+	}
+}
+
+func writeCurlSynthesis(b *strings.Builder, f SearchForm) {
+	if f.UsesSystemPrompt() {
+		b.WriteString("    \"systemPrompt\": " + strconv.Quote(f.SystemPrompt) + ",\n")
+	}
+	if f.UsesStreaming() {
+		b.WriteString("    \"stream\": true,\n")
+	}
 }
 
 func writePythonContents(b *strings.Builder, f SearchForm) {

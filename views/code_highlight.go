@@ -11,6 +11,14 @@ import (
 )
 
 func HighlightCode(language string, src string) string {
+	return highlightCode(language, src, true)
+}
+
+func HighlightCodeNoLines(language string, src string) string {
+	return highlightCode(language, src, false)
+}
+
+func highlightCode(language string, src string, lineNumbers bool) string {
 	lexer := lexers.Get(language)
 	iterator, err := lexer.Tokenise(nil, src)
 	if err != nil {
@@ -18,7 +26,7 @@ func HighlightCode(language string, src string) string {
 		return `<pre class="code-block"><code>` + htmlescape.EscapeString(src) + `</code></pre>`
 	}
 
-	formatter := chromahtml.New(chromahtml.WithLineNumbers(true))
+	formatter := chromahtml.New(chromahtml.WithLineNumbers(lineNumbers))
 	style := chromastyles.Get("github-dark")
 
 	var buf bytes.Buffer

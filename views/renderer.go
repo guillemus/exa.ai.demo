@@ -42,7 +42,7 @@ func (x *Renderer) RenderSearch(w io.Writer) {
 			JS,
 		},
 		Body: []Node{
-			Main(Data("signals", `{query: "Latest news on Nvidia", panelTab: "code", codeTab: "python", outputTab: "json", searchType: "auto", deepModel: "deep", numResults: 10, category: "company", structuredOutputs: false, highlights: true, highlightMaxCharacters: 4000, highlightQuery: "", text: false, textMaxCharacters: 20000, maxAgeHours: "", livecrawlTimeout: 10000, includeDomains: "", excludeDomains: "", startPublishedDate: "", endPublishedDate: "", userLocation: ""}`), PlaygroundPage()),
+			Main(Data("signals", `{query: "Latest news on Nvidia", panelTab: "code", codeTab: "python", outputTab: "json", searchType: "auto", deepModel: "deep", numResults: 10, category: "company", structuredOutputs: false, streamResponse: false, systemPromptEnabled: false, systemPrompt: "", highlights: true, highlightMaxCharacters: 4000, highlightQuery: "", text: false, textMaxCharacters: 20000, maxAgeHours: "", livecrawlTimeout: 10000, includeDomains: "", excludeDomains: "", startPublishedDate: "", endPublishedDate: "", userLocation: ""}`), PlaygroundPage()),
 			If(x.env.Dev, DebugSignals()),
 		},
 	}))
@@ -59,12 +59,17 @@ func PatchCodePanel(sse *datastar.ServerSentEventGenerator, form SearchForm) {
 }
 
 func PatchOutputLoading(sse *datastar.ServerSentEventGenerator, form SearchForm) {
-	ssePatchSignals(sse, `{ "panelTab": "output", "outputTab": "json" }`)
+	ssePatchSignals(sse, `{ "panelTab": "output" }`)
 	ssePatch(sse, CodePanelContent(CodePanelData{Form: form, Loading: true}))
 }
 
 func PatchOutputJSON(sse *datastar.ServerSentEventGenerator, form SearchForm, output string) {
 	ssePatch(sse, CodePanelContent(CodePanelData{Form: form, OutputJSON: output}))
+}
+
+func PatchOutputStream(sse *datastar.ServerSentEventGenerator, form SearchForm, output string, content string) {
+	resp := &exa.SearchResponse{Output: &exa.DeepSearchOutput{Content: content, Grounding: []exa.GroundingInfo{}}}
+	ssePatch(sse, CodePanelContent(CodePanelData{Form: form, OutputJSON: output, Response: resp}))
 }
 
 func PatchOutputResponse(sse *datastar.ServerSentEventGenerator, form SearchForm, output string, resp *exa.SearchResponse) {

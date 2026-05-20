@@ -3,6 +3,7 @@ package views
 import (
 	"encoding/json"
 	"fmt"
+	htmlescape "html"
 	"strconv"
 	"strings"
 
@@ -38,6 +39,16 @@ var _ = styles.Style(`
 	.copy-code-button:hover { background: #161616; color: white; }
 	.install-line { margin: 0 0 24px; padding: 13px 16px; border-radius: var(--radius-2); background: var(--bg-code-soft); color: #f1f1d5; font-size: 14px; }
 	.code-block, .highlighted-code .chroma { margin: 20px 24px; padding: 18px 24px; font-size: 14px; line-height: 2.05; color: #d7d7d7; background: transparent !important; overflow: auto; }
+	.output-json { margin: 20px 24px; padding: 10px; overflow: auto; color: #d7d7d7; font-family: var(--font-code); font-size: 14px; line-height: 1.45; scrollbar-color: #3b3b3b #111; scrollbar-width: thin; }
+	.output-json::-webkit-scrollbar { height: 10px; }
+	.output-json::-webkit-scrollbar-track { background: #111; border-radius: var(--radius-round); }
+	.output-json::-webkit-scrollbar-thumb { background: #3b3b3b; border-radius: var(--radius-round); border: 2px solid #111; }
+	.output-json::-webkit-scrollbar-thumb:hover { background: #505050; }
+	.output-json-line { white-space: pre; min-height: 1.45em; }
+	.json-string { color: #a5d6ff; }
+	.json-number { color: #79c0ff; }
+	.json-keyword { color: #ff7b72; }
+	.json-punct { color: #d2a8ff; }
 	.code-example .highlighted-code .chroma { margin: 0; }
 	.output-loading { margin: 28px 24px; color: #d7d7d7; font-size: 15px; }
 	.visual-output { padding: 28px 24px 48px; color: #e7e7e7; font-family: var(--font-text); }
@@ -159,7 +170,7 @@ func OutputExample(data CodePanelData) Node {
 	return Div(
 		Div(Data("show", "$outputTab == 'json'"),
 			If(data.Loading, Div(Class("output-loading"), Text("Searching Exa…"))),
-			If(!data.Loading && data.OutputJSON != "", Div(Class("highlighted-code"), Raw(HighlightCode("json", data.OutputJSON)))),
+			Iff(!data.Loading && data.OutputJSON != "", func() Node { return OutputJSON(data.OutputJSON) }),
 			If(!data.Loading && data.OutputJSON == "", OutputEmptyState()),
 		),
 		Div(Data("show", "$outputTab == 'visual'"), Attr("style", "display: none"),
@@ -168,6 +179,74 @@ func OutputExample(data CodePanelData) Node {
 			If(!data.Loading && data.Response == nil, OutputEmptyState()),
 		),
 	)
+}
+
+func OutputJSON(output string) Node {
+	lines := strings.Split(output, "\n")
+	return Div(Class("output-json"), Group(Map(lines, func(line string) Node {
+		return Div(Class("output-json-line"), Raw(highlightJSONLine(line)))
+	})))
+}
+
+func highlightJSONLine(line string) string {
+	var b strings.Builder
+	for i := 0; i < len(line); {
+		c := line[i]
+		if c == '"' {
+			end := i + 1
+			for end < len(line) {
+				if line[end] == '\\' {
+					end += 2
+					continue
+				}
+				if line[end] == '"' {
+					end++
+					break
+				}
+				end++
+			}
+			b.WriteString(`<span class="json-string">`)
+			b.WriteString(htmlescape.EscapeString(line[i:end]))
+			b.WriteString(`</span>`)
+			i = end
+			continue
+		}
+		if strings.ContainsRune("{}[]:,", rune(c)) {
+			b.WriteString(`<span class="json-punct">`)
+			b.WriteByte(c)
+			b.WriteString(`</span>`)
+			i++
+			continue
+		}
+		if c == '-' || c >= '0' && c <= '9' {
+			end := i + 1
+			for end < len(line) && strings.ContainsRune("0123456789.eE+-", rune(line[end])) {
+				end++
+			}
+			b.WriteString(`<span class="json-number">`)
+			b.WriteString(htmlescape.EscapeString(line[i:end]))
+			b.WriteString(`</span>`)
+			i = end
+			continue
+		}
+		matched := false
+		for _, keyword := range []string{"true", "false", "null"} {
+			if strings.HasPrefix(line[i:], keyword) {
+				b.WriteString(`<span class="json-keyword">`)
+				b.WriteString(keyword)
+				b.WriteString(`</span>`)
+				i += len(keyword)
+				matched = true
+				break
+			}
+		}
+		if matched {
+			continue
+		}
+		b.WriteString(htmlescape.EscapeString(line[i : i+1]))
+		i++
+	}
+	return b.String()
 }
 
 func OutputEmptyState() Node {
@@ -183,8 +262,9 @@ func VisualOutput(resp *exa.SearchResponse) Node {
 	return Div(Class("visual-output"),
 		OutputContent(resp),
 		StructuredOutput(resp),
-		H3(Text(fmt.Sprintf("Results (%d)", len(resp.Results)))),
-		Group(Map(resp.Results, ResultCard)),
+		Iff(len(resp.Results) > 0, func() Node {
+			return Div(H3(Text(fmt.Sprintf("Results (%d)", len(resp.Results)))), Group(Map(resp.Results, ResultCard)))
+		}),
 	)
 }
 

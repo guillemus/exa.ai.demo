@@ -14,6 +14,12 @@ type SearchRequest struct {
 	// JSON schema for deep search structured output mode
 	OutputSchema map[string]any `json:"outputSchema,omitempty"`
 
+	// Instructions guiding synthesized output and deep-search planning
+	SystemPrompt string `json:"systemPrompt,omitempty"`
+
+	// If true, returns OpenAI-compatible server-sent event chunks
+	Stream bool `json:"stream,omitempty"`
+
 	// A data category to focus on: company, research paper, news, pdf, github, personal site, people, financial report
 	Category string `json:"category,omitempty"`
 
@@ -140,6 +146,26 @@ type ExtrasOptions struct {
 
 	// Number of images to return for each result
 	ImageLinks int `json:"imageLinks,omitempty"`
+}
+
+// SearchStreamChunk represents one OpenAI-compatible streaming chunk from /search
+type SearchStreamChunk struct {
+	ID      string               `json:"id,omitempty"`
+	Object  string               `json:"object,omitempty"`
+	Created int64                `json:"created,omitempty"`
+	Model   string               `json:"model,omitempty"`
+	Choices []SearchStreamChoice `json:"choices"`
+}
+
+type SearchStreamChoice struct {
+	Index        int               `json:"index"`
+	Delta        SearchStreamDelta `json:"delta"`
+	FinishReason *string           `json:"finish_reason"`
+}
+
+type SearchStreamDelta struct {
+	Role    string `json:"role,omitempty"`
+	Content string `json:"content,omitempty"`
 }
 
 // SearchResponse represents the response from the /search endpoint

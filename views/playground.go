@@ -112,6 +112,7 @@ var _ = styles.Style(`
 		font-size: 14px;
 	}
 	.text-input:disabled { color: #a1a5ad; background: #fcfcfd; }
+	.prompt-input { height: 84px; padding: 10px var(--size-3); resize: vertical; }
 	.select-input { text-align: left; display: flex; align-items: center; justify-content: space-between; }
 	select.select-input { appearance: auto; cursor: pointer; }
 	.contents-section { margin-top: 42px; }
@@ -148,7 +149,7 @@ var _ = styles.Style(`
 
 func PlaygroundPage() Node {
 	return Div(Class("playground-shell"),
-		Div(Class("playground-form"), Data("effect__debounce.150ms", "$query; $searchType; $deepModel; $numResults; $category; $structuredOutputs; $highlights; $highlightMaxCharacters; $highlightQuery; $text; $textMaxCharacters; $maxAgeHours; $livecrawlTimeout; $includeDomains; $excludeDomains; $startPublishedDate; $endPublishedDate; $userLocation; @get('/code')"),
+		Div(Class("playground-form"), Data("effect__debounce.150ms", "$query; $searchType; $deepModel; $numResults; $category; $structuredOutputs; $streamResponse; $systemPromptEnabled; $systemPrompt; $highlights; $highlightMaxCharacters; $highlightQuery; $text; $textMaxCharacters; $maxAgeHours; $livecrawlTimeout; $includeDomains; $excludeDomains; $startPublishedDate; $endPublishedDate; $userLocation; @get('/code')"),
 			HeaderBar(),
 			QueryCard(),
 			SearchTypeCard(),
@@ -215,6 +216,7 @@ func ContentsSection() Node {
 	return Section(Class("section contents-section"),
 		H2(Class("section-heading"), Text("Contents")),
 		ToggleRow("Structured outputs", "Return structured outputs in addition to search results.", "structuredOutputs"),
+		StructuredOutputFields(),
 		ToggleRow("Highlights", "Token efficient page excerpts", "highlights"),
 		NestedFields("highlights",
 			FieldRow("Max characters", "", Input(Type("text"), Placeholder("Default: 4000"), Class("text-input"), Data("bind:highlight-max-characters", ""), Data("attr:disabled", "!$highlights"))),
@@ -232,6 +234,14 @@ func ContentsSection() Node {
 			),
 		),
 		Button(Type("button"), Class("advanced-button"), Text("› Advanced Options")),
+	)
+}
+
+func StructuredOutputFields() Node {
+	return Div(Class("nested-fields"), Data("show", "$structuredOutputs"), Attr("style", "display: none"),
+		ToggleRow("Stream response", "Return OpenAI-compatible SSE chunks as they arrive.", "streamResponse"),
+		ToggleRow("System prompt", "Instructions for synthesized output.", "systemPromptEnabled"),
+		FieldRow("Prompt", "", Textarea(Class("text-input prompt-input"), Rows("3"), Data("bind:system-prompt", ""), Data("attr:disabled", "!$systemPromptEnabled"))),
 	)
 }
 

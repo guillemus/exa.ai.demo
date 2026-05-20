@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"exa.ai.demo/exa"
 	"exa.ai.demo/views"
@@ -37,7 +38,24 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	views.PatchOutputLoading(sse, form)
 
 	client := exa.NewClient(s.env.ExaAIAPIKey)
-	resp, err := client.Search(r.Context(), exaSearchRequest(form))
+	req := exaSearchRequest(form)
+	if form.UsesStreaming() {
+		chunks := []exa.SearchStreamChunk{}
+		var content strings.Builder
+		err := client.StreamSearch(r.Context(), req, func(chunk exa.SearchStreamChunk) error {
+			chunks = append(chunks, chunk)
+			content.WriteString(streamChunkContent(chunk))
+			views.PatchOutputStream(sse, form, marshalStreamChunks(chunks), content.String())
+			return nil
+		})
+		if err != nil {
+			slog.Error("exa stream search", "err", err)
+			views.PatchOutputJSON(sse, form, marshalJSON(map[string]string{"error": "Unable to stream Exa response. Check your API key and try again."}))
+		}
+		return
+	}
+
+	resp, err := client.Search(r.Context(), req)
 	if err != nil {
 		slog.Error("exa search", "err", err)
 		views.PatchOutputJSON(sse, form, marshalJSON(map[string]string{"error": "Unable to search Exa. Check your API key and try again."}))
