@@ -15,12 +15,20 @@ import (
 var _ = styles.Style(`
 	.code-panel {
 		height: 100vh;
-		overflow: auto;
+		overflow-y: auto;
+		overflow-x: hidden;
 		background: var(--bg-code-panel);
 		color: #e9e9e9;
 		position: relative;
 		font-family: var(--font-code);
+		scrollbar-color: #3b3b3b #111;
+		scrollbar-width: thin;
 	}
+	.code-panel * { min-width: 0; }
+	.code-panel::-webkit-scrollbar, .code-panel *::-webkit-scrollbar { width: var(--size-2); height: var(--size-2); }
+	.code-panel::-webkit-scrollbar-track, .code-panel *::-webkit-scrollbar-track { background: #111; border-radius: var(--radius-round); }
+	.code-panel::-webkit-scrollbar-thumb, .code-panel *::-webkit-scrollbar-thumb { background: #3b3b3b; border-radius: var(--radius-round); border: var(--border-size-2) solid #111; }
+	.code-panel::-webkit-scrollbar-thumb:hover, .code-panel *::-webkit-scrollbar-thumb:hover { background: #505050; }
 	.code-tabs, .language-tabs, .output-tabs {
 		display: flex; align-items: center; border-bottom: var(--border-size-1) solid #2a2a2a;
 	}
@@ -96,7 +104,10 @@ var _ = styles.Style(`
 	.output-content strong { color: #fff; }
 	.output-content code { padding: var(--size-1) var(--size-2); border-radius: var(--radius-2); background: #111; font-family: var(--font-code); }
 	.output-content a { color: #84e8ff; }
-	.structured-output .highlighted-code .chroma { margin: 0; padding: 0; font-size: var(--font-size-1); line-height: var(--font-lineheight-3); }
+	.structured-output .highlighted-code { overflow: hidden; }
+	.structured-output .highlighted-code .chroma { margin: 0; padding: 0; overflow: hidden; font-size: var(--font-size-1); line-height: var(--font-lineheight-3); }
+	.structured-output .highlighted-code table { width: 100%; table-layout: fixed; }
+	.structured-output .highlighted-code pre { white-space: pre-wrap !important; overflow-wrap: anywhere; }
 	.result-list { display: grid; gap: var(--size-5); }
 	.result-card { border: var(--border-size-1) solid #3a3a3a; border-radius: var(--radius-3); background: #222; margin: 0; overflow: hidden; }
 	.result-main { padding: var(--size-5); }

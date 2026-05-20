@@ -134,11 +134,12 @@ var _ = styles.Style(`
 		padding: var(--size-3) 0;
 	}
 	.toggle {
-		width: var(--size-8); height: var(--size-5); border: 0; border-radius: var(--radius-round); background: #dedede; padding: var(--border-size-2);
+		width: var(--size-8); height: var(--size-5); border: 0; border-radius: var(--radius-round); background-color: #dedede; padding: var(--border-size-2); display: flex; align-items: center;
+		transition: background-color .16s ease;
 	}
-	.toggle span { display: block; width: var(--size-4); height: var(--size-4); border-radius: 50%; background: white; box-shadow: var(--shadow-2); }
-	.toggle.is-on { background: linear-gradient(180deg, #002289, #1747ee); }
-	.toggle.is-on span { transform: translateX(var(--size-4)); }
+	.toggle span { display: block; width: calc(var(--size-5) - var(--size-1)); height: calc(var(--size-5) - var(--size-1)); border-radius: 50%; background: white; box-shadow: var(--shadow-2); transform: translateX(0); transition: transform .16s ease; }
+	.toggle.is-on { background-color: #1747ee; }
+	.toggle.is-on span { transform: translateX(calc(var(--size-8) - var(--size-5))); }
 	.nested-fields {
 		border-left: var(--border-size-2) solid var(--line);
 		margin-left: var(--size-2);
