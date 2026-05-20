@@ -78,6 +78,9 @@ func marshalStreamChunks(chunks []exa.SearchStreamChunk) string {
 }
 
 func streamChunkContent(chunk exa.SearchStreamChunk) string {
+	if chunk.Delta != "" {
+		return chunk.Delta
+	}
 	var b strings.Builder
 	for _, choice := range chunk.Choices {
 		b.WriteString(choice.Delta.Content)

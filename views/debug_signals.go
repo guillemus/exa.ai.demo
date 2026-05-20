@@ -8,29 +8,29 @@ import (
 var _ = styles.Style(`
 	.debug-signals {
 		position: fixed;
-		right: 12px;
-		top: 12px;
+		right: var(--size-3);
+		top: var(--size-3);
 		z-index: 1000;
-		width: 320px;
-		border: 1px solid var(--gray-7);
+		width: var(--size-14);
+		border: var(--border-size-1) solid var(--gray-7);
 		border-radius: var(--radius-2);
 		background: white;
 		color: var(--gray-12);
 		font-family: var(--font-code);
-		font-size: 12px;
-		line-height: 1.45;
+		font-size: var(--font-size-0);
+		line-height: var(--font-lineheight-3);
 	}
 	.debug-signals summary {
-		padding: 8px 10px;
+		padding: var(--size-2);
 		cursor: pointer;
 		font-weight: 700;
 	}
 	.debug-signals pre {
-		max-height: 420px;
+		max-height: 50vh;
 		overflow: auto;
 		margin: 0;
-		padding: 10px;
-		border-top: 1px solid var(--gray-3);
+		padding: var(--size-2);
+		border-top: var(--border-size-1) solid var(--gray-3);
 		white-space: pre-wrap;
 	}
 `)

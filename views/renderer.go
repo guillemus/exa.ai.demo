@@ -184,9 +184,8 @@ func PatchOutputJSON(sse *datastar.ServerSentEventGenerator, form SearchForm, ou
 	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: form.OutputTab, OutputJSON: output}))
 }
 
-func PatchOutputStream(sse *datastar.ServerSentEventGenerator, form SearchForm, output string, content string) {
+func PatchOutputStream(sse *datastar.ServerSentEventGenerator, form SearchForm, output string, resp *exa.SearchResponse) {
 	form = form.WithDefaults()
-	resp := &exa.SearchResponse{Output: &exa.DeepSearchOutput{Content: content, Grounding: []exa.GroundingInfo{}}}
 	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: form.OutputTab, OutputJSON: output, Response: resp}))
 }
 

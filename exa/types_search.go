@@ -150,11 +150,21 @@ type ExtrasOptions struct {
 
 // SearchStreamChunk represents one OpenAI-compatible streaming chunk from /search
 type SearchStreamChunk struct {
-	ID      string               `json:"id,omitempty"`
-	Object  string               `json:"object,omitempty"`
-	Created int64                `json:"created,omitempty"`
-	Model   string               `json:"model,omitempty"`
-	Choices []SearchStreamChoice `json:"choices"`
+	ID          string               `json:"id,omitempty"`
+	Object      string               `json:"object,omitempty"`
+	Created     int64                `json:"created,omitempty"`
+	Model       string               `json:"model,omitempty"`
+	RequestID   string               `json:"requestId,omitempty"`
+	Type        string               `json:"type,omitempty"`
+	Delta       string               `json:"delta,omitempty"`
+	StreamReset bool                 `json:"streamReset,omitempty"`
+	Grounding   []GroundingInfo      `json:"grounding,omitempty"`
+	Citations   []CitationRef        `json:"citations,omitempty"`
+	Results     []Result             `json:"results,omitempty"`
+	Output      *DeepSearchOutput    `json:"output,omitempty"`
+	CostDollars *CostDollars         `json:"costDollars,omitempty"`
+	SearchTime  float64              `json:"searchTime,omitempty"`
+	Choices     []SearchStreamChoice `json:"choices,omitempty"`
 }
 
 type SearchStreamChoice struct {
@@ -164,8 +174,9 @@ type SearchStreamChoice struct {
 }
 
 type SearchStreamDelta struct {
-	Role    string `json:"role,omitempty"`
-	Content string `json:"content,omitempty"`
+	Role      string        `json:"role,omitempty"`
+	Content   string        `json:"content,omitempty"`
+	Citations []CitationRef `json:"citations,omitempty"`
 }
 
 // SearchResponse represents the response from the /search endpoint

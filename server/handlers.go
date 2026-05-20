@@ -41,11 +41,27 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	req := exaSearchRequest(form)
 	if form.UsesStreaming() {
 		chunks := []exa.SearchStreamChunk{}
+		resp := &exa.SearchResponse{}
+		grounding := []exa.GroundingInfo{}
 		var content strings.Builder
 		err := client.StreamSearch(r.Context(), req, func(chunk exa.SearchStreamChunk) error {
 			chunks = append(chunks, chunk)
+			if chunk.StreamReset {
+				content.Reset()
+			}
 			content.WriteString(streamChunkContent(chunk))
-			views.PatchOutputStream(sse, form, marshalStreamChunks(chunks), content.String())
+			if len(chunk.Results) > 0 {
+				resp.Results = chunk.Results
+			}
+			if len(chunk.Grounding) > 0 {
+				grounding = chunk.Grounding
+			}
+			if chunk.Output != nil {
+				resp.Output = chunk.Output
+			} else if content.Len() > 0 || len(grounding) > 0 {
+				resp.Output = &exa.DeepSearchOutput{Content: content.String(), Grounding: grounding}
+			}
+			views.PatchOutputStream(sse, form, marshalStreamChunks(chunks), resp)
 			return nil
 		})
 		if err != nil {

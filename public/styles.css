@@ -66,8 +66,8 @@
     --text-secondary: var(--gray-5);
     --text-muted: var(--gray-7);
     --border-color: var(--gray-10);
-    --font-app-size: 0.9375rem;
-    --font-sidebar-size: 0.875rem;
+    --font-app-size: var(--font-size-1);
+    --font-sidebar-size: var(--font-size-0);
 }
 
 html,
