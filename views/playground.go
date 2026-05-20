@@ -65,6 +65,11 @@ var _ = styles.Style(`
 		font-size: 14px;
 		text-decoration: none;
 	}
+	.copy-state-button { display: inline-grid; align-items: center; }
+	.copy-state-button > span { grid-area: 1 / 1; transition: opacity .12s ease; }
+	.copy-feedback { opacity: 0; visibility: hidden; }
+	.copy-state-button.is-copied .copy-default { opacity: 0; visibility: hidden; }
+	.copy-state-button.is-copied .copy-feedback { opacity: 1; visibility: visible; }
 	.query-block { margin-bottom: 36px; }
 	.field-label { display: block; color: #656970; margin-bottom: 8px; }
 	.query-card {
@@ -245,7 +250,13 @@ func HeaderBar() Node {
 		Div(Class("header-actions"),
 			A(Class("ghost-button"), Href("https://dashboard.exa.ai/playground/search"), Target("_blank"), Rel("noopener noreferrer"), Text("▣ Playground")),
 			A(Class("ghost-button"), Href("https://exa.ai/docs/reference/search-api-guide"), Target("_blank"), Rel("noopener noreferrer"), Text("▣ Docs")),
-			Button(Type("button"), Class("ghost-button"), Data("on:click", "copyToClipboard("+strconv.Quote(CopyForAIText)+")"), Text("◉ ✺ ◒ Copy for AI")),
+			Button(
+				Type("button"),
+				Class("ghost-button copy-state-button"),
+				Data("on:click", "copyToClipboard("+strconv.Quote(CopyForAIText)+", el)"),
+				Span(Class("copy-default"), Text("◉ ✺ ◒ Copy for AI")),
+				Span(Class("copy-feedback"), Text("✓ Copied")),
+			),
 		),
 	)
 }

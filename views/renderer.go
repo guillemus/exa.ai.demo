@@ -65,8 +65,8 @@ type PageState struct {
 func initialPageState(q url.Values) PageState {
 	form := SearchForm{
 		Query:                  queryString(q, "query", "Latest news on Nvidia"),
-		CodeTab:                queryString(q, "codeTab", "python"),
-		OutputTab:              queryString(q, "outputTab", "json"),
+		CodeTab:                "python",
+		OutputTab:              "json",
 		SearchType:             queryString(q, "searchType", "auto"),
 		DeepModel:              queryString(q, "deepModel", "deep"),
 		NumResults:             SignalInt(queryInt(q, "numResults", 10)),
@@ -90,7 +90,7 @@ func initialPageState(q url.Values) PageState {
 	}
 	return PageState{
 		Form:      form,
-		PanelTab:  queryString(q, "panelTab", "code"),
+		PanelTab:  "code",
 		CodeTab:   form.CodeTab,
 		OutputTab: form.OutputTab,
 	}

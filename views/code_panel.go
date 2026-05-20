@@ -49,7 +49,9 @@ var _ = styles.Style(`
 		color: #d8d8d8;
 		font-size: 18px;
 	}
-	.copy-code-button:hover { background: #161616; color: white; }
+	.copy-code-button:hover, .copy-code-button.is-copied { background: #161616; color: white; }
+	.copy-code-button.copy-state-button { display: grid; }
+	.ghost-button.is-copied { color: #111; border-color: #111; background: #f0f0d8; }
 	.install-line { margin: 0 0 24px; padding: 13px 16px; border-radius: var(--radius-2); background: var(--bg-code-soft); color: #f1f1d5; font-size: 14px; }
 	.code-block, .highlighted-code .chroma {
 		margin: 20px 24px;
@@ -201,7 +203,14 @@ func CodeExample(tab, install, code, highlighted string, current string) Node {
 		children = append(children, Div(Class("install-line"), Code(Text(install))))
 	}
 	children = append(children,
-		Button(Type("button"), Class("copy-code-button"), Data("on:click", "copyToClipboard("+strconv.Quote(code)+")"), Attr("aria-label", "Copy code"), Text("⧉")),
+		Button(
+			Type("button"),
+			Class("copy-code-button copy-state-button"),
+			Data("on:click", "copyToClipboard("+strconv.Quote(code)+", el)"),
+			Attr("aria-label", "Copy code"),
+			Span(Class("copy-default"), Text("⧉")),
+			Span(Class("copy-feedback"), Text("✓")),
+		),
 		Div(Class("highlighted-code"), Raw(highlighted)),
 	)
 	return Div(children...)

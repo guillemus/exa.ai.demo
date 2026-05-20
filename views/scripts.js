@@ -111,12 +111,28 @@ function updateSearchTypeFromPointer(root, event, snap) {
     setSearchTypeValue(root, searchTypeValues[index], false)
 }
 
+/** @type {WeakMap<HTMLElement, number>} */
+const copyResetTimers = new WeakMap()
+
 /**
  * @param {string} text
+ * @param {HTMLElement=} button
  * @returns {Promise<void>}
  */
-async function copyToClipboard(text) {
+async function copyToClipboard(text, button) {
     await navigator.clipboard.writeText(text)
+    if (!button) return
+
+    button.classList.add('is-copied')
+
+    const existingTimer = copyResetTimers.get(button)
+    if (existingTimer !== undefined) window.clearTimeout(existingTimer)
+
+    const timer = window.setTimeout(() => {
+        button.classList.remove('is-copied')
+        copyResetTimers.delete(button)
+    }, 1000)
+    copyResetTimers.set(button, timer)
 }
 
 window.copyToClipboard = copyToClipboard
@@ -124,9 +140,6 @@ window.copyToClipboard = copyToClipboard
 /** @type {Record<string, string | number | boolean>} */
 const urlSignalDefaults = {
     query: 'Latest news on Nvidia',
-    panelTab: 'code',
-    codeTab: 'python',
-    outputTab: 'json',
     searchType: 'auto',
     deepModel: 'deep',
     numResults: 10,
@@ -163,6 +176,7 @@ function syncSignalsToURL(signals) {
 
     const params = new URLSearchParams()
     for (const [key, value] of Object.entries(signals)) {
+        if (!(key in urlSignalDefaults)) continue
         if (String(value) === String(urlSignalDefaults[key])) continue
         if (value === '') continue
         params.set(key, String(value))
