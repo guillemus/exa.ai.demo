@@ -102,6 +102,17 @@ var _ = styles.Style(`
 	.result-title { font-size: 20px; color: white; margin-bottom: 12px; }
 	.result-meta { color: #9a9a9a; margin-bottom: 8px; display: flex; gap: 16px; }
 	.result-url { color: #e2e2e2; word-break: break-all; }
+	.result-content-toggle { margin-top: 18px; display: flex; flex-direction: column; }
+	.result-section-label { margin: 0 0 8px; color: #9a9a9a; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+	.result-expand-check { display: none; }
+	.result-content-button { order: 2; align-self: center; margin-top: 14px; padding: 8px 14px; border: 1px solid #4a4a4a; border-radius: var(--radius-round); color: #f0f0d8; cursor: pointer; }
+	.result-content-button .show-less { display: none; }
+	.result-content-preview { order: 1; max-height: 150px; overflow: hidden; color: #d6d6d6; line-height: 1.6; position: relative; }
+	.result-content-preview::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 52px; background: linear-gradient(transparent, #222); }
+	.result-expand-check:checked ~ .result-content-preview { max-height: none; }
+	.result-expand-check:checked ~ .result-content-preview::after { display: none; }
+	.result-expand-check:checked ~ .result-content-button .show-more { display: none; }
+	.result-expand-check:checked ~ .result-content-button .show-less { display: inline; }
 	.entity-toggle { border-top: 1px solid #3a3a3a; padding: 14px 22px; color: #e2e2e2; }
 	.entity-table { margin: 10px 0 18px; border: 1px solid #3a3a3a; border-radius: var(--radius-2); overflow: hidden; }
 	.entity-heading { padding: 16px; color: #aaa; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid #333; }
@@ -243,7 +254,7 @@ func OutputExample(data CodePanelData) Node {
 		),
 		Div(Data("show", "$outputTab == 'visual'"), Attr("style", showStyle(data.OutputTab == "visual")),
 			If(data.Loading, Div(Class("output-loading"), Text("Searching Exa…"))),
-			Iff(!data.Loading && data.Response != nil, func() Node { return VisualOutput(data.Response) }),
+			Iff(!data.Loading && data.Response != nil, func() Node { return VisualOutput(data.Response, data.Form) }),
 			If(!data.Loading && data.Response == nil, OutputEmptyState()),
 		),
 	)
@@ -269,10 +280,10 @@ func OutputEmptyState() Node {
 	)
 }
 
-func VisualOutput(resp *exa.SearchResponse) Node {
+func VisualOutput(resp *exa.SearchResponse, form SearchForm) Node {
 	return Div(Class("visual-output"),
-		OutputContent(resp),
-		StructuredOutput(resp),
+		Iff(form.StructuredOutputs, func() Node { return OutputContent(resp) }),
+		Iff(form.StructuredOutputs, func() Node { return StructuredOutput(resp) }),
 		Iff(len(resp.Results) > 0, func() Node {
 			return Div(H3(Text(fmt.Sprintf("Results (%d)", len(resp.Results)))), Group(Map(resp.Results, ResultCard)))
 		}),
@@ -303,9 +314,52 @@ func ResultCard(result exa.Result) Node {
 			Div(Class("result-title"), Text(result.Title)),
 			Div(Class("result-meta"), Span(Text("By Exa")), Iff(result.PublishedDate != nil, func() Node { return Span(Text(*result.PublishedDate)) })),
 			Div(Class("result-url"), Text(result.URL)),
+			Iff(len(result.Highlights) > 0, func() Node {
+				return ResultExpandable(resultToggleID("highlights", result), "Highlights", markdownList(result.Highlights))
+			}),
+			Iff(result.Text != "", func() Node { return ResultExpandable(resultToggleID("text", result), "Text", result.Text) }),
 		),
 		Iff(result.Extras != nil && len(result.Extras.Entities) > 0, func() Node { return EntityDetails(result.Extras.Entities) }),
 	)
+}
+
+func ResultExpandable(id string, label string, content string) Node {
+	return Div(Class("result-content-toggle"),
+		Div(Class("result-section-label"), Text(label)),
+		Input(Type("checkbox"), ID(id), Class("result-expand-check")),
+		Div(Class("result-content-preview output-content"), Raw(RenderMarkdown(content))),
+		Label(Attr("for", id), Class("result-content-button"), Span(Class("show-more"), Text("Show More")), Span(Class("show-less"), Text("Show Less"))),
+	)
+}
+
+func markdownList(items []string) string {
+	var b strings.Builder
+	for _, item := range items {
+		b.WriteString("- ")
+		b.WriteString(item)
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+func resultToggleID(kind string, result exa.Result) string {
+	base := result.ID
+	if base == "" {
+		base = result.URL
+	}
+	return "result-" + kind + "-" + safeID(base)
+}
+
+func safeID(value string) string {
+	var b strings.Builder
+	for _, r := range value {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('-')
+		}
+	}
+	return strings.Trim(b.String(), "-")
 }
 
 func EntityDetails(entities []exa.Entity) Node {

@@ -24,10 +24,12 @@ func NewHandler(env env.Env) http.Handler {
 		env:      env,
 	}
 
-	s.router.Handle("/public/*", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
 	s.router.Get("/", s.handleHome)
 	s.router.Get("/code", s.handleCode)
 	s.router.Post("/search", s.handleSearch)
+	if env.Dev {
+		s.router.Handle("/*", http.FileServer(http.Dir("public")))
+	}
 	return s.router
 }
 

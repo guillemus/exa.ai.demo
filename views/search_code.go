@@ -102,7 +102,7 @@ func (f SearchForm) EffectiveSearchType() string {
 }
 
 func (f SearchForm) UsesOutputSchema() bool {
-	return f.StructuredOutputs || strings.HasPrefix(f.EffectiveSearchType(), searchTypeDeep)
+	return f.StructuredOutputs
 }
 
 func (f SearchForm) UsesStreaming() bool {
