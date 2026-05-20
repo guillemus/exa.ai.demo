@@ -9,7 +9,6 @@ import (
 )
 
 type Env struct {
-	DBPath       string
 	ExaAIAPIKey  string
 	Port         string
 	AssetVersion string
@@ -20,7 +19,6 @@ func ParseEnv() Env {
 	_ = godotenv.Load()
 
 	return Env{
-		DBPath:       getEnvOr("DB_PATH", "tmp/app.db"),
 		ExaAIAPIKey:  os.Getenv("EXA_AI_API_KEY"),
 		Port:         getEnvOr("PORT", "3000"),
 		AssetVersion: fmt.Sprintf("%d", time.Now().Unix()),
