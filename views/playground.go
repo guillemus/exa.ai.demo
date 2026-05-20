@@ -364,7 +364,6 @@ func ContentsSection(form SearchForm) Node {
 				)),
 			),
 		),
-		Button(Type("button"), Class("advanced-button"), Text("› Advanced Options")),
 	)
 }
 
