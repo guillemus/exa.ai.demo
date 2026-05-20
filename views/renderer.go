@@ -42,7 +42,7 @@ func (x *Renderer) RenderSearch(w io.Writer) {
 			JS,
 		},
 		Body: []Node{
-			Main(Data("signals", `{query: "Latest news on Nvidia", panelTab: "code", codeTab: "python", outputTab: "json", searchType: "auto", deepModel: "deep", numResults: 10, category: "company"}`), PlaygroundPage()),
+			Main(Data("signals", `{query: "Latest news on Nvidia", panelTab: "code", codeTab: "python", outputTab: "json", searchType: "auto", deepModel: "deep", numResults: 10, category: "company", structuredOutputs: false, highlights: true, highlightMaxCharacters: 4000, highlightQuery: "", text: false, textMaxCharacters: 20000, maxAgeHours: "", livecrawlTimeout: 10000, includeDomains: "", excludeDomains: "", startPublishedDate: "", endPublishedDate: "", userLocation: ""}`), PlaygroundPage()),
 			If(x.env.Dev, DebugSignals()),
 		},
 	}))

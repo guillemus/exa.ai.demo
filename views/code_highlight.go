@@ -18,7 +18,7 @@ func HighlightCode(language string, src string) string {
 		return `<pre class="code-block"><code>` + htmlescape.EscapeString(src) + `</code></pre>`
 	}
 
-	formatter := chromahtml.New(chromahtml.WithClasses(true))
+	formatter := chromahtml.New(chromahtml.WithLineNumbers(true))
 	style := chromastyles.Get("github-dark")
 
 	var buf bytes.Buffer

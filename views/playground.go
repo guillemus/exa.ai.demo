@@ -1,6 +1,8 @@
 package views
 
 import (
+	"strconv"
+
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -61,6 +63,7 @@ var _ = styles.Style(`
 		padding: var(--size-1) var(--size-2);
 		color: #6a6e76;
 		font-size: 14px;
+		text-decoration: none;
 	}
 	.query-block { margin-bottom: 36px; }
 	.field-label { display: block; color: #656970; margin-bottom: 8px; }
@@ -145,7 +148,7 @@ var _ = styles.Style(`
 
 func PlaygroundPage() Node {
 	return Div(Class("playground-shell"),
-		Div(Class("playground-form"), Data("effect__debounce.150ms", "$query; $searchType; $deepModel; $numResults; $category; @get('/code')"),
+		Div(Class("playground-form"), Data("effect__debounce.150ms", "$query; $searchType; $deepModel; $numResults; $category; $structuredOutputs; $highlights; $highlightMaxCharacters; $highlightQuery; $text; $textMaxCharacters; $maxAgeHours; $livecrawlTimeout; $includeDomains; $excludeDomains; $startPublishedDate; $endPublishedDate; $userLocation; @get('/code')"),
 			HeaderBar(),
 			QueryCard(),
 			SearchTypeCard(),
@@ -161,8 +164,9 @@ func HeaderBar() Node {
 	return Div(Class("page-header"),
 		Div(H1(Text("Search"))),
 		Div(Class("header-actions"),
-			Button(Type("button"), Class("ghost-button"), Text("▣ Docs")),
-			Button(Type("button"), Class("ghost-button"), Text("◉ ✺ ◒ Copy for AI")),
+			A(Class("ghost-button"), Href("https://dashboard.exa.ai/playground/search"), Target("_blank"), Rel("noopener noreferrer"), Text("▣ Playground")),
+			A(Class("ghost-button"), Href("https://exa.ai/docs/reference/search-api-guide"), Target("_blank"), Rel("noopener noreferrer"), Text("▣ Docs")),
+			Button(Type("button"), Class("ghost-button"), Data("on:click", "copyToClipboard("+strconv.Quote(CopyForAIText)+")"), Text("◉ ✺ ◒ Copy for AI")),
 		),
 	)
 }
@@ -210,22 +214,21 @@ func CategorySelect() Node {
 func ContentsSection() Node {
 	return Section(Class("section contents-section"),
 		H2(Class("section-heading"), Text("Contents")),
-		ToggleRow("Structured outputs", "Return structured outputs in addition to search results.", false),
-		ToggleRow("Highlights", "Token efficient page excerpts", true),
-		NestedFields(
-			FieldRow("Max characters", "", Input(Type("text"), Placeholder("Default: 4000"), Class("text-input"))),
-			FieldRow("Guiding query ⓘ", "", Input(Type("text"), Placeholder("e.g. key takeaways"), Class("text-input"))),
+		ToggleRow("Structured outputs", "Return structured outputs in addition to search results.", "structuredOutputs"),
+		ToggleRow("Highlights", "Token efficient page excerpts", "highlights"),
+		NestedFields("highlights",
+			FieldRow("Max characters", "", Input(Type("text"), Placeholder("Default: 4000"), Class("text-input"), Data("bind:highlight-max-characters", ""), Data("attr:disabled", "!$highlights"))),
+			FieldRow("Guiding query ⓘ", "", Input(Type("text"), Placeholder("e.g. key takeaways"), Class("text-input"), Data("bind:highlight-query", ""), Data("attr:disabled", "!$highlights"))),
 		),
-		ToggleRow("Full webpage text", "", false),
-		NestedFieldsDisabled(
-			FieldRow("Max characters", "", Input(Type("text"), Value("20,000"), Disabled(), Class("text-input"))),
-			FieldRow("Main content only ⓘ", "", Toggle(true)),
+		ToggleRow("Full webpage text", "", "text"),
+		NestedFields("text",
+			FieldRow("Max characters", "", Input(Type("text"), Value("20,000"), Data("bind:text-max-characters", ""), Data("attr:disabled", "!$text"), Class("text-input"))),
 		),
 		Div(Class("subsection"),
 			Div(Class("copy"), Strong(Text("Livecrawl")), P(Class("muted"), Text("Manage content freshness"))),
-			NestedFields(
-				FieldRow("Max age ⓘ", "", UnitInput("Default: cache only", "hr")),
-				FieldRow("Livecrawl timeout ⓘ", "", UnitInput("Max: 30000", "ms")),
+			NestedFields("",
+				FieldRow("Max age ⓘ", "", UnitInput("Default: cache only", "hr", "max-age-hours")),
+				FieldRow("Livecrawl timeout ⓘ", "", UnitInput("Max: 30000", "ms", "livecrawl-timeout")),
 			),
 		),
 		Button(Type("button"), Class("advanced-button"), Text("› Advanced Options")),
@@ -235,10 +238,11 @@ func ContentsSection() Node {
 func FiltersSection() Node {
 	return Section(Class("section filters-section"),
 		H2(Class("section-heading"), Text("Filters")),
-		FieldRow("Include domains", "", Input(Type("text"), Placeholder("e.g. exa.ai, docs.exa.ai/reference"), Class("text-input"))),
-		FieldRow("Exclude domains", "", Input(Type("text"), Placeholder("e.g. reddit.com, twitter.com"), Class("text-input"))),
-		FieldRow("Published date range", "", Button(Type("button"), Class("select-input"), Text("Select date range  ◷"))),
-		FieldRow("User location", "Select a country to localize search results", Button(Type("button"), Class("select-input"), Text("Select a country...⌄"))),
+		FieldRow("Include domains", "", Input(Type("text"), Placeholder("e.g. exa.ai, docs.exa.ai/reference"), Class("text-input"), Data("bind:include-domains", ""))),
+		FieldRow("Exclude domains", "", Input(Type("text"), Placeholder("e.g. reddit.com, twitter.com"), Class("text-input"), Data("bind:exclude-domains", ""))),
+		FieldRow("Published after", "", Input(Type("date"), Class("text-input"), Data("bind:start-published-date", ""))),
+		FieldRow("Published before", "", Input(Type("date"), Class("text-input"), Data("bind:end-published-date", ""))),
+		FieldRow("User location", "Two-letter ISO country code", Input(Type("text"), Placeholder("US"), MaxLength("2"), Class("text-input"), Data("bind:user-location", ""))),
 	)
 }
 
@@ -252,29 +256,32 @@ func FieldRow(label string, description string, control Node) Node {
 	)
 }
 
-func ToggleRow(title string, description string, checked bool) Node {
+func ToggleRow(title string, description string, signal string) Node {
 	return Div(Class("toggle-row"),
 		Div(Class("copy"), Strong(Text(title)), If(description != "", P(Class("muted"), Text(description)))),
-		Toggle(checked),
+		Toggle(signal),
 	)
 }
 
-func Toggle(checked bool) Node {
-	classes := "toggle"
-	if checked {
-		classes += " is-on"
+func Toggle(signal string) Node {
+	return Button(
+		Type("button"),
+		Class("toggle"),
+		Data("on:click", "$"+signal+" = !$"+signal),
+		Data("class:is-on", "$"+signal),
+		Span(),
+	)
+}
+
+func NestedFields(signal string, nodes ...Node) Node {
+	attrs := []Node{Class("nested-fields")}
+	if signal != "" {
+		attrs = append(attrs, Data("class:disabled-nest", "!$"+signal))
 	}
-	return Button(Type("button"), Class(classes), Span())
+	attrs = append(attrs, Group(nodes))
+	return Div(attrs...)
 }
 
-func NestedFields(nodes ...Node) Node {
-	return Div(Class("nested-fields"), Group(nodes))
-}
-
-func NestedFieldsDisabled(nodes ...Node) Node {
-	return Div(Class("nested-fields disabled-nest"), Group(nodes))
-}
-
-func UnitInput(placeholder string, unit string) Node {
-	return Div(Class("unit-input"), Input(Type("text"), Placeholder(placeholder), Class("text-input")), Span(Text(unit)))
+func UnitInput(placeholder string, unit string, signal string) Node {
+	return Div(Class("unit-input"), Input(Type("text"), Placeholder(placeholder), Class("text-input"), Data("bind:"+signal, "")), Span(Text(unit)))
 }

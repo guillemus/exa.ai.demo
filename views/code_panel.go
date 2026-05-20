@@ -3,6 +3,7 @@ package views
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"exa.ai.demo/exa"
@@ -32,8 +33,12 @@ var _ = styles.Style(`
 	.language-tab.active, .output-tab.active { color: white; border-bottom-color: #75a7ff; }
 	.tab-icon { color: #8f8f8f; font-size: 15px; }
 	.language-tab.active .tab-icon { color: white; }
-	.install-line { margin: 16px 24px 18px; padding: 13px 16px; border-radius: var(--radius-2); background: var(--bg-code-soft); color: #f1f1d5; font-size: 14px; }
-	.code-block, .highlighted-code .chroma { margin: 20px 24px; font-size: 14px; line-height: 1.55; color: #d7d7d7; background: transparent; }
+	.code-example { position: relative; padding: 24px; }
+	.copy-code-button { position: absolute; top: 96px; right: 24px; z-index: 1; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--radius-2); background: #090909; color: #d8d8d8; font-size: 18px; }
+	.copy-code-button:hover { background: #161616; color: white; }
+	.install-line { margin: 0 0 24px; padding: 13px 16px; border-radius: var(--radius-2); background: var(--bg-code-soft); color: #f1f1d5; font-size: 14px; }
+	.code-block, .highlighted-code .chroma { margin: 20px 24px; padding: 18px 24px; font-size: 14px; line-height: 2.05; color: #d7d7d7; background: transparent !important; overflow: auto; }
+	.code-example .highlighted-code .chroma { margin: 0; }
 	.output-loading { margin: 28px 24px; color: #d7d7d7; font-size: 15px; }
 	.visual-output { padding: 28px 24px 48px; color: #e7e7e7; font-family: var(--font-text); }
 	.visual-output h3 { margin: 0 0 18px; font-size: 24px; color: white; }
@@ -55,14 +60,9 @@ var _ = styles.Style(`
 	.output-empty-inner { transform: translateY(80px); text-align: center; }
 	.output-empty-icon { font-size: 42px; line-height: 1; margin-bottom: 18px; color: #e5e5e5; }
 	.output-empty-text { font-size: 18px; }
-	.highlighted-code pre { margin: 0; }
-	.highlighted-code code { font-family: var(--font-code); }
-	.highlighted-code .ln { color: #8b949e; padding-right: 16px; }
-	.highlighted-code .k, .highlighted-code .kn { color: #ff7b72; }
-	.highlighted-code .s, .highlighted-code .s1, .highlighted-code .s2 { color: #a5d6ff; }
-	.highlighted-code .mi, .highlighted-code .kc { color: #79c0ff; }
-	.highlighted-code .nf, .highlighted-code .n { color: #d2d7de; }
-	.highlighted-code .o, .highlighted-code .p { color: #c9d1d9; }
+	.highlighted-code pre { margin: 0; background: transparent !important; }
+	.highlighted-code code { font-family: var(--font-code); background: transparent !important; }
+	.highlighted-code .lnt, .highlighted-code .ln { color: #8b949e; padding-right: 16px; user-select: none; }
 	@media (max-width: 1100px) {
 		.code-panel { min-height: 560px; height: auto; }
 	}
@@ -91,9 +91,9 @@ func CodePanelContent(data CodePanelData) Node {
 				CodeTabButton("javascript", "⬡", "Javascript"),
 				CodeTabButton("curl", ">_", "curl"),
 			),
-			CodeExample("python", "pip install exa-py", HighlightCode("python", PythonSearchCode(data.Form))),
-			CodeExample("javascript", "npm install exa-js", HighlightCode("javascript", JavaScriptSearchCode(data.Form))),
-			CodeExample("curl", "", HighlightCode("bash", CurlSearchCode(data.Form))),
+			CodeExample("python", "pip install exa-py", PythonSearchCode(data.Form), HighlightCode("python", PythonSearchCode(data.Form))),
+			CodeExample("javascript", "npm install exa-js", JavaScriptSearchCode(data.Form), HighlightCode("javascript", JavaScriptSearchCode(data.Form))),
+			CodeExample("curl", "", CurlSearchCode(data.Form), HighlightCode("bash", CurlSearchCode(data.Form))),
 		),
 		Div(Data("show", "$panelTab == 'output'"), Attr("style", "display: none"),
 			Nav(Class("output-tabs"), Attr("aria-label", "Search output"),
@@ -127,7 +127,7 @@ func CodeTabButton(tab, icon, label string) Node {
 	)
 }
 
-func CodeExample(tab, install, highlighted string) Node {
+func CodeExample(tab, install, code, highlighted string) Node {
 	children := []Node{
 		Class("code-example"),
 		Data("show", "$codeTab == '"+tab+"'"),
@@ -138,7 +138,10 @@ func CodeExample(tab, install, highlighted string) Node {
 	if install != "" {
 		children = append(children, Div(Class("install-line"), Code(Text(install))))
 	}
-	children = append(children, Div(Class("highlighted-code"), Raw(highlighted)))
+	children = append(children,
+		Button(Type("button"), Class("copy-code-button"), Data("on:click", "copyToClipboard("+strconv.Quote(code)+")"), Attr("aria-label", "Copy code"), Text("⧉")),
+		Div(Class("highlighted-code"), Raw(highlighted)),
+	)
 	return Div(children...)
 }
 

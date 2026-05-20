@@ -7,7 +7,7 @@ import (
 
 var _ = styles.Style(`
 	.slider-card {
-		--slider-position: 66.666%;
+		--slider-position: 50%;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-3);
 		padding: 28px 32px 24px;
@@ -26,8 +26,8 @@ var _ = styles.Style(`
 		height: 8px;
 		border-radius: var(--radius-round);
 	}
-	.slider-line { right: 0; background: #cfd2d8; }
-	.slider-fill { width: var(--slider-position); background: linear-gradient(90deg, #9dc0ff, #356bf3); }
+	.slider-line { right: 0; background: #cfd2d8; overflow: hidden; }
+	.slider-fill { width: var(--slider-position); max-width: 100%; background: linear-gradient(90deg, #9dc0ff, #356bf3); }
 	.dot {
 		position: absolute;
 		top: 10px;
@@ -38,10 +38,10 @@ var _ = styles.Style(`
 		transform: translate(-50%, 0);
 		pointer-events: none;
 	}
-	.dot-1 { left: 0; } .dot-2 { left: 33.333%; } .dot-3 { left: 66.666%; } .dot-4 { left: 100%; }
+	.dot-1 { left: 0; } .dot-2 { left: 25%; } .dot-3 { left: 50%; } .dot-4 { left: 100%; }
 	.slider-thumb {
 		position: absolute;
-		left: var(--slider-position);
+		left: clamp(12px, var(--slider-position), calc(100% - 12px));
 		top: 2px;
 		width: 24px;
 		height: 24px;
@@ -52,9 +52,12 @@ var _ = styles.Style(`
 		transform: translateX(-50%);
 		pointer-events: none;
 	}
-	.slider-labels { display: grid; grid-template-columns: repeat(4, 1fr); }
-	.slider-option { display: flex; flex-direction: column; gap: 2px; border: 0; background: transparent; padding: 0; text-align: left; color: var(--text); }
-	.slider-option:nth-child(4) { text-align: right; align-items: flex-end; }
+	.slider-labels { position: relative; height: 42px; }
+	.slider-option { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: transparent; padding: 0; text-align: center; color: var(--text); transform: translateX(-50%); }
+	.slider-option:nth-child(1) { left: 0; align-items: flex-start; text-align: left; transform: none; }
+	.slider-option:nth-child(2) { left: 25%; }
+	.slider-option:nth-child(3) { left: 50%; }
+	.slider-option:nth-child(4) { left: 100%; text-align: right; align-items: flex-end; transform: translateX(-100%); }
 	.slider-option span { color: #6d7583; font-size: 14px; }
 	.slider-option.is-active strong { color: #0f172a; }
 	.slider-option.is-active span { color: #4b5563; }
