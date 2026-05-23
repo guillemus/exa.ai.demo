@@ -51,7 +51,6 @@ func (x *Renderer) RenderSearch(w io.Writer, r *http.Request) {
 				state := initialPageState(r.URL.Query())
 				return Main(Data("signals", state.Signals()), PlaygroundPage(state))
 			}),
-			If(x.env.Dev, DebugSignals()),
 		},
 	}))
 }

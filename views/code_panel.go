@@ -32,23 +32,23 @@ var _ = styles.Style(`
 	.code-tabs, .language-tabs, .output-tabs {
 		display: flex; align-items: center; border-bottom: var(--border-size-1) solid #2a2a2a;
 	}
-	.code-tabs { height: var(--size-9); gap: var(--size-4); padding: 0 var(--size-5); }
-	.language-tabs, .output-tabs { height: var(--size-7); gap: var(--size-6); padding: 0 var(--size-5); background: #111; }
-	.code-tab, .language-tab, .output-tab { border: 0; background: transparent; color: #9a9a9a; font-size: var(--font-size-1); font-weight: 600; }
-	.code-tab { height: var(--size-8); padding: 0 var(--size-3); border: var(--border-size-1) solid transparent; }
+	.code-tabs { height: 52px; gap: 24px; padding: 0 24px; }
+	.language-tabs, .output-tabs { height: 36px; gap: 30px; padding: 0 24px; background: #111; }
+	.code-tab, .language-tab, .output-tab { border: 0; background: transparent; color: #9a9a9a; font-size: 16px; line-height: 24px; font-weight: 600; }
+	.code-tab { height: 36px; padding: 0 12px; border: var(--border-size-1) solid transparent; }
 	.language-tab, .output-tab { align-self: stretch; padding: 0; border-bottom: var(--border-size-2) solid transparent; display: inline-flex; align-items: center; gap: var(--size-2); }
 	.code-tab.active { color: #84e8ff; background: #153840; border-color: #285b65; border-radius: var(--radius-2); }
 	.language-tab.active, .output-tab.active { color: white; border-bottom-color: #75a7ff; }
 	.tab-icon { color: #8f8f8f; font-size: var(--font-size-1); }
 	.language-tab.active .tab-icon { color: white; }
-	.code-example { position: relative; padding: var(--size-5); }
+	.code-example { position: relative; padding: 24px; }
 	.copy-code-button {
 		position: absolute;
 		top: calc(var(--size-9) + var(--size-7) + var(--size-2));
 		right: var(--size-5);
 		z-index: 1;
-		width: var(--size-7);
-		height: var(--size-7);
+		width: 32px;
+		height: 32px;
 		display: grid;
 		place-items: center;
 		border: 0;
@@ -59,12 +59,12 @@ var _ = styles.Style(`
 	}
 	.copy-code-button:hover, .copy-code-button.is-copied { background: #161616; color: white; }
 	.copy-code-button.copy-state-button { display: grid; }
-	.install-line { margin: 0 0 var(--size-5); padding: var(--size-3); border-radius: var(--radius-2); background: var(--bg-code-soft); color: #f1f1d5; font-size: var(--font-size-0); }
+	.install-line { margin: 0 0 24px; padding: 12px 16px; border-radius: 6px; background: #1d1d1d; color: #f1f1d5; font-size: 14px; line-height: 20px; }
 	.code-block, .code-example .highlighted-code .chroma {
 		margin: var(--size-4) var(--size-5);
 		padding: var(--size-4) var(--size-5);
-		font-size: var(--font-size-0);
-		line-height: var(--font-lineheight-5);
+		font-size: 14px;
+		line-height: 24px;
 		color: #d7d7d7;
 		background: transparent !important;
 		overflow: auto;
