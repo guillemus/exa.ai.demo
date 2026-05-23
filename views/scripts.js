@@ -1,3 +1,5 @@
+/* global tippy */
+
 /** @type {readonly string[]} */
 const searchTypeValues = ['instant', 'fast', 'auto', 'deep']
 
@@ -153,6 +155,7 @@ const urlSignalDefaults = {
     highlightQuery: '',
     text: false,
     textMaxCharacters: 20000,
+    textMainContentOnly: true,
     maxAgeHours: '',
     livecrawlTimeout: 10000,
     includeDomains: '',
@@ -233,3 +236,24 @@ function initSearchTypeSlider(element) {
 }
 
 window.initSearchTypeSlider = initSearchTypeSlider
+
+/**
+ * @param {HTMLElement} element
+ * @returns {void}
+ */
+function initTooltip(element) {
+    if (element.dataset.tooltipReady === 'true') return
+    element.dataset.tooltipReady = 'true'
+
+    tippy(element, {
+        content: element.dataset.tooltip ?? '',
+        arrow: true,
+        delay: [120, 0],
+        interactive: true,
+        maxWidth: 260,
+        placement: 'top',
+        theme: 'exa',
+    })
+}
+
+window.initTooltip = initTooltip

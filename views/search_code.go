@@ -50,6 +50,7 @@ type SearchForm struct {
 	HighlightQuery         string    `json:"highlightQuery"`
 	Text                   bool      `json:"text"`
 	TextMaxCharacters      SignalInt `json:"textMaxCharacters"`
+	TextMainContentOnly    bool      `json:"textMainContentOnly"`
 	MaxAgeHours            SignalInt `json:"maxAgeHours"`
 	LivecrawlTimeout       SignalInt `json:"livecrawlTimeout"`
 	IncludeDomains         string    `json:"includeDomains"`
@@ -225,7 +226,11 @@ func writePythonContents(b *strings.Builder, f SearchForm) {
 		b.WriteString("},\n")
 	}
 	if f.Text {
-		fmt.Fprintf(b, "        \"text\": {\"max_characters\": %d},\n", f.TextMaxCharacters)
+		fmt.Fprintf(b, "        \"text\": {\"max_characters\": %d", f.TextMaxCharacters)
+		if f.TextMainContentOnly {
+			b.WriteString(", \"include_sections\": [\"body\"]")
+		}
+		b.WriteString("},\n")
 	}
 	if f.MaxAgeHours != 0 {
 		fmt.Fprintf(b, "        \"max_age_hours\": %d,\n", f.MaxAgeHours)
@@ -245,7 +250,11 @@ func writeJavaScriptContents(b *strings.Builder, f SearchForm) {
 		b.WriteString(" },\n")
 	}
 	if f.Text {
-		fmt.Fprintf(b, "    text: { maxCharacters: %d },\n", f.TextMaxCharacters)
+		fmt.Fprintf(b, "    text: { maxCharacters: %d", f.TextMaxCharacters)
+		if f.TextMainContentOnly {
+			b.WriteString(", includeSections: ['body']")
+		}
+		b.WriteString(" },\n")
 	}
 	if f.MaxAgeHours != 0 {
 		fmt.Fprintf(b, "    maxAgeHours: %d,\n", f.MaxAgeHours)
@@ -265,7 +274,11 @@ func writeCurlContents(b *strings.Builder, f SearchForm) {
 		b.WriteString("},\n")
 	}
 	if f.Text {
-		fmt.Fprintf(b, "      \"text\": {\"maxCharacters\": %d},\n", f.TextMaxCharacters)
+		fmt.Fprintf(b, "      \"text\": {\"maxCharacters\": %d", f.TextMaxCharacters)
+		if f.TextMainContentOnly {
+			b.WriteString(", \"includeSections\": [\"body\"]")
+		}
+		b.WriteString("},\n")
 	}
 	if f.MaxAgeHours != 0 {
 		fmt.Fprintf(b, "      \"maxAgeHours\": %d,\n", f.MaxAgeHours)

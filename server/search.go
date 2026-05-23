@@ -40,6 +40,9 @@ func exaSearchRequest(form views.SearchForm) *exa.SearchRequest {
 	}
 	if form.Text {
 		req.Contents.Text = &exa.TextOptions{MaxCharacters: int(form.TextMaxCharacters)}
+		if form.TextMainContentOnly {
+			req.Contents.Text.IncludeSections = []string{"body"}
+		}
 	}
 	return req
 }

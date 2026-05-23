@@ -259,6 +259,8 @@ func HeaderBar() Node {
 			Button(
 				Type("button"),
 				Class("ghost-button copy-state-button"),
+				Data("tooltip", "Copy context for using this endpoint with AI"),
+				Data("init", "initTooltip(el)"),
 				Data("on:click", "copyToClipboard("+strconv.Quote(CopyForAIText)+", el)"),
 				Span(Class("copy-default"), Text("◉ ✺ ◒ Copy for AI")),
 				Span(Class("copy-feedback"), Text("✓ Copied")),
@@ -332,7 +334,7 @@ func ContentsSection(form SearchForm) Node {
 				Data("attr:disabled", "!$highlights"),
 				If(!form.Highlights, Disabled()),
 			)),
-			FieldRow("Guiding query ⓘ", "", Input(
+			FieldRowLabel(LabelWithTooltip("Guiding query", "Optional natural language description of what to have highlights focus on."), "", Input(
 				Type("text"),
 				Placeholder("e.g. key takeaways"),
 				Class("text-input"),
@@ -352,17 +354,18 @@ func ContentsSection(form SearchForm) Node {
 				If(!form.Text, Disabled()),
 				Class("text-input"),
 			)),
+			ToggleRowLabel(LabelWithTooltip("Main content only", "Only return the main content of the page, excluding navbars, banners, footers, and similar page chrome."), "", "textMainContentOnly", form.TextMainContentOnly),
 		),
 		Div(Class("subsection"),
 			Div(Class("copy"), Strong(Text("Livecrawl")), P(Class("muted"), Text("Manage content freshness"))),
 			NestedFields("", true,
-				FieldRow("Max age ⓘ", "", UnitInput(
+				FieldRowLabel(LabelWithTooltip("Max age", "Max age of cached content before livecrawl. 0 = always livecrawl. -1 = never livecrawl (cache only)."), "", UnitInput(
 					"Default: cache only",
 					"hr",
 					"max-age-hours",
 					signalIntValue(form.MaxAgeHours),
 				)),
-				FieldRow("Livecrawl timeout ⓘ", "", UnitInput(
+				FieldRowLabel(LabelWithTooltip("Livecrawl timeout", "Maximum time to wait for live crawling before giving up."), "", UnitInput(
 					"Max: 30000",
 					"ms",
 					"livecrawl-timeout",
@@ -433,9 +436,13 @@ func FiltersSection(form SearchForm) Node {
 }
 
 func FieldRow(label string, description string, control Node) Node {
+	return FieldRowLabel(Text(label), description, control)
+}
+
+func FieldRowLabel(label Node, description string, control Node) Node {
 	return Div(Class("field-row"),
 		Div(Class("field-copy"),
-			Label(Text(label)),
+			Label(label),
 			If(description != "", Small(Text(description))),
 		),
 		Div(Class("field-control"), control),
@@ -443,8 +450,12 @@ func FieldRow(label string, description string, control Node) Node {
 }
 
 func ToggleRow(title string, description string, signal string, on bool) Node {
+	return ToggleRowLabel(Text(title), description, signal, on)
+}
+
+func ToggleRowLabel(title Node, description string, signal string, on bool) Node {
 	return Div(Class("toggle-row"),
-		Div(Class("copy"), Strong(Text(title)), If(description != "", P(Class("muted"), Text(description)))),
+		Div(Class("copy"), Strong(title), If(description != "", P(Class("muted"), Text(description)))),
 		Toggle(signal, on),
 	)
 }
