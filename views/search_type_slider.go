@@ -107,7 +107,13 @@ func SearchTypeSlider(form SearchForm) Node {
 		Data("search-type-slider", ""),
 		Data("init", "initSearchTypeSlider(el)"),
 		Data("effect", "setSearchTypeValue(el, $searchType, true)"),
-		Input(Type("hidden"), Value(form.SearchType), Data("bind:search-type", ""), Data("search-type-value", "")),
+		Input(
+			Type("hidden"),
+			Value(form.SearchType),
+			Data("bind:search-type", ""),
+			Data("search-type-value", ""),
+			effectSyncQueryParamAndGetCode("searchType", "searchType", "'auto'"),
+		),
 		Div(Class("slider-track"), Data("search-type-track", ""),
 			Span(Class("slider-line")),
 			Span(Class("slider-fill")),
@@ -146,7 +152,11 @@ func DeepModelControls(form SearchForm) Node {
 	if form.SearchType == searchTypeDeep {
 		style = ""
 	}
-	return Div(Class("deep-model-row"), Data("show", "$searchType == 'deep'"), Attr("style", style),
+	return Div(
+		Class("deep-model-row"),
+		Data("show", "$searchType == 'deep'"),
+		Attr("style", style),
+		effectSyncQueryParamAndGetCode("deepModel", "deepModel", "'deep'"),
 		Strong(Text("Deep model")),
 		Div(Class("deep-model-buttons"),
 			DeepModelButton("deep-lite", form.DeepModel),

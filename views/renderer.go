@@ -29,6 +29,8 @@ func NewRenderer(env env.Env) *Renderer {
 }
 
 func (x *Renderer) RenderSearch(w io.Writer, r *http.Request) {
+	state := initialPageState(r.URL.Query())
+
 	renderNode(w, HTML5(HTML5Props{
 		Title:       "Search | Exa API",
 		Description: "Exa Search API playground markup",
@@ -47,10 +49,8 @@ func (x *Renderer) RenderSearch(w io.Writer, r *http.Request) {
 			JS,
 		},
 		Body: []Node{
-			Iff(true, func() Node {
-				state := initialPageState(r.URL.Query())
-				return Main(Data("signals", state.Signals()), PlaygroundPage(state))
-			}),
+			DebugSignals(),
+			Main(Data("signals", state.Signals()), PlaygroundPage(state)),
 		},
 	}))
 }
@@ -65,8 +65,6 @@ type PageState struct {
 func initialPageState(q url.Values) PageState {
 	form := SearchForm{
 		Query:                  queryString(q, "query", "Latest news on Nvidia"),
-		CodeTab:                "python",
-		OutputTab:              "json",
 		SearchType:             queryString(q, "searchType", "auto"),
 		DeepModel:              queryString(q, "deepModel", "deep"),
 		NumResults:             SignalInt(queryInt(q, "numResults", 10)),
@@ -92,38 +90,24 @@ func initialPageState(q url.Values) PageState {
 	return PageState{
 		Form:      form,
 		PanelTab:  "code",
-		CodeTab:   form.CodeTab,
-		OutputTab: form.OutputTab,
+		CodeTab:   "python",
+		OutputTab: "json",
 	}
 }
 
+type PageSignals struct {
+	SearchForm
+	PanelTab  string `json:"panelTab"`
+	CodeTab   string `json:"codeTab"`
+	OutputTab string `json:"outputTab"`
+}
+
 func (s PageState) Signals() string {
-	signals := map[string]any{
-		"query":                  s.Form.Query,
-		"panelTab":               s.PanelTab,
-		"codeTab":                s.Form.CodeTab,
-		"outputTab":              s.Form.OutputTab,
-		"searchType":             s.Form.SearchType,
-		"deepModel":              s.Form.DeepModel,
-		"numResults":             int(s.Form.NumResults),
-		"category":               s.Form.Category,
-		"structuredOutputs":      s.Form.StructuredOutputs,
-		"streamResponse":         s.Form.StreamResponse,
-		"systemPromptEnabled":    s.Form.SystemPromptEnabled,
-		"systemPrompt":           s.Form.SystemPrompt,
-		"highlights":             s.Form.Highlights,
-		"highlightMaxCharacters": int(s.Form.HighlightMaxCharacters),
-		"highlightQuery":         s.Form.HighlightQuery,
-		"text":                   s.Form.Text,
-		"textMaxCharacters":      int(s.Form.TextMaxCharacters),
-		"textMainContentOnly":    s.Form.TextMainContentOnly,
-		"maxAgeHours":            signalIntOrEmpty(s.Form.MaxAgeHours),
-		"livecrawlTimeout":       int(s.Form.LivecrawlTimeout),
-		"includeDomains":         s.Form.IncludeDomains,
-		"excludeDomains":         s.Form.ExcludeDomains,
-		"startPublishedDate":     s.Form.StartPublishedDate,
-		"endPublishedDate":       s.Form.EndPublishedDate,
-		"userLocation":           s.Form.UserLocation,
+	signals := PageSignals{
+		SearchForm: s.Form,
+		PanelTab:   s.PanelTab,
+		CodeTab:    s.CodeTab,
+		OutputTab:  s.OutputTab,
 	}
 	bs, err := json.Marshal(signals)
 	if err != nil {
@@ -157,13 +141,6 @@ func queryInt(q url.Values, key string, fallback int) int {
 	return n
 }
 
-func signalIntOrEmpty(value SignalInt) any {
-	if value == 0 {
-		return ""
-	}
-	return int(value)
-}
-
 func renderNode(w io.Writer, node Node) {
 	if err := node.Render(w); err != nil {
 		slog.Error("view render error", "err", err)
@@ -172,28 +149,28 @@ func renderNode(w io.Writer, node Node) {
 
 func PatchCodePanel(sse *datastar.ServerSentEventGenerator, form SearchForm) {
 	form = form.WithDefaults()
-	ssePatchID(sse, CodeContent(form, form.CodeTab), "code-panel-code")
+	ssePatchID(sse, CodeContent(form, "python"), "code-panel-code")
 }
 
 func PatchOutputLoading(sse *datastar.ServerSentEventGenerator, form SearchForm) {
 	form = form.WithDefaults()
 	ssePatchSignals(sse, `{ "panelTab": "output" }`)
-	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: form.OutputTab, Loading: true}))
+	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: "json", Loading: true}))
 }
 
 func PatchOutputJSON(sse *datastar.ServerSentEventGenerator, form SearchForm, output string) {
 	form = form.WithDefaults()
-	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: form.OutputTab, OutputJSON: output}))
+	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: "json", OutputJSON: output}))
 }
 
 func PatchOutputStream(sse *datastar.ServerSentEventGenerator, form SearchForm, output string, resp *exa.SearchResponse) {
 	form = form.WithDefaults()
-	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: form.OutputTab, OutputJSON: output, Response: resp}))
+	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: "json", OutputJSON: output, Response: resp}))
 }
 
 func PatchOutputResponse(sse *datastar.ServerSentEventGenerator, form SearchForm, output string, resp *exa.SearchResponse) {
 	form = form.WithDefaults()
-	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: form.OutputTab, OutputJSON: output, Response: resp}))
+	ssePatchCodePanel(sse, CodePanelContent(CodePanelData{Form: form, PanelTab: "output", OutputTab: "json", OutputJSON: output, Response: resp}))
 }
 
 func ssePatchSignals(sse *datastar.ServerSentEventGenerator, signals string) {

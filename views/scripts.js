@@ -139,58 +139,26 @@ async function copyToClipboard(text, button) {
 
 window.copyToClipboard = copyToClipboard
 
-/** @type {Record<string, string | number | boolean>} */
-const urlSignalDefaults = {
-    query: 'Latest news on Nvidia',
-    searchType: 'auto',
-    deepModel: 'deep',
-    numResults: 10,
-    category: 'company',
-    structuredOutputs: false,
-    streamResponse: false,
-    systemPromptEnabled: false,
-    systemPrompt: '',
-    highlights: true,
-    highlightMaxCharacters: 4000,
-    highlightQuery: '',
-    text: false,
-    textMaxCharacters: 20000,
-    textMainContentOnly: true,
-    maxAgeHours: '',
-    livecrawlTimeout: 10000,
-    includeDomains: '',
-    excludeDomains: '',
-    startPublishedDate: '',
-    endPublishedDate: '',
-    userLocation: '',
-}
-
-let urlSignalsReady = false
-
 /**
- * @param {Record<string, string | number | boolean>} signals
+ * @param {string} name
+ * @param {unknown} value
  * @returns {void}
  */
-function syncSignalsToURL(signals) {
-    if (!urlSignalsReady) {
-        urlSignalsReady = true
-        return
+function syncQueryParam(name, value) {
+    const url = new URL(location.href)
+
+    if (value === '' || value == null) {
+        url.searchParams.delete(name)
+    } else {
+        url.searchParams.set(name, String(value))
     }
 
-    const params = new URLSearchParams()
-    for (const [key, value] of Object.entries(signals)) {
-        if (!(key in urlSignalDefaults)) continue
-        if (String(value) === String(urlSignalDefaults[key])) continue
-        if (value === '') continue
-        params.set(key, String(value))
+    if (url.href !== location.href) {
+        history.replaceState(null, '', url.href)
     }
-
-    const query = params.toString()
-    const url = location.pathname + (query ? '?' + query : '')
-    history.replaceState(null, '', url)
 }
 
-window.syncSignalsToURL = syncSignalsToURL
+window.syncQueryParam = syncQueryParam
 
 /**
  * @param {HTMLElement} element

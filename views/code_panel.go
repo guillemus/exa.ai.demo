@@ -167,6 +167,9 @@ func CodePanel(state PageState) Node {
 
 func CodePanelContent(data CodePanelData) Node {
 	return Div(ID("code-panel-content"),
+		Data("signals:panel-tab__ifmissing", "'code'"),
+		Data("signals:code-tab__ifmissing", "'python'"),
+		Data("signals:output-tab__ifmissing", "'json'"),
 		Div(Class("code-tabs"),
 			PanelTabButton("code", "▣ Code", data.PanelTab),
 			PanelTabButton("output", "◇ Output", data.PanelTab),
@@ -225,17 +228,11 @@ func CodeTabButton(tab, icon, label string, current string) Node {
 }
 
 func CodeExample(tab, install, code, highlighted string, current string) Node {
-	children := []Node{
+	return Div(
 		Class("code-example"),
 		Data("show", "$codeTab == '"+tab+"'"),
-	}
-	if current != tab {
-		children = append(children, Attr("style", "display: none"))
-	}
-	if install != "" {
-		children = append(children, Div(Class("install-line"), Code(Text(install))))
-	}
-	children = append(children,
+		If(current != tab, Attr("style", "display: none")),
+		If(install != "", Div(Class("install-line"), Code(Text(install)))),
 		Button(
 			Type("button"),
 			Class("copy-code-button copy-state-button"),
@@ -246,7 +243,6 @@ func CodeExample(tab, install, code, highlighted string, current string) Node {
 		),
 		Div(Class("highlighted-code"), Raw(highlighted)),
 	)
-	return Div(children...)
 }
 
 func OutputTabButton(tab, label string, current string) Node {

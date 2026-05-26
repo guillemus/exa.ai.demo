@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"strconv"
 
 	. "maragu.dev/gomponents"
@@ -162,66 +163,10 @@ var _ = styles.Style(`
 	.advanced-button { border: 0; background: transparent; color: #6d737c; padding: var(--size-4) 0; font-size: var(--font-size-1); }
 `)
 
-const urlSignalsEffect = `
-	syncSignalsToURL({
-		query: $query,
-		panelTab: $panelTab,
-		codeTab: $codeTab,
-		outputTab: $outputTab,
-		searchType: $searchType,
-		deepModel: $deepModel,
-		numResults: $numResults,
-		category: $category,
-		structuredOutputs: $structuredOutputs,
-		streamResponse: $streamResponse,
-		systemPromptEnabled: $systemPromptEnabled,
-		systemPrompt: $systemPrompt,
-		highlights: $highlights,
-		highlightMaxCharacters: $highlightMaxCharacters,
-		highlightQuery: $highlightQuery,
-		text: $text,
-		textMaxCharacters: $textMaxCharacters,
-		maxAgeHours: $maxAgeHours,
-		livecrawlTimeout: $livecrawlTimeout,
-		includeDomains: $includeDomains,
-		excludeDomains: $excludeDomains,
-		startPublishedDate: $startPublishedDate,
-		endPublishedDate: $endPublishedDate,
-		userLocation: $userLocation
-	})
-`
-
-const codeRefreshEffect = `
-	$query;
-	$searchType;
-	$deepModel;
-	$numResults;
-	$category;
-	$structuredOutputs;
-	$streamResponse;
-	$systemPromptEnabled;
-	$systemPrompt;
-	$highlights;
-	$highlightMaxCharacters;
-	$highlightQuery;
-	$text;
-	$textMaxCharacters;
-	$maxAgeHours;
-	$livecrawlTimeout;
-	$includeDomains;
-	$excludeDomains;
-	$startPublishedDate;
-	$endPublishedDate;
-	$userLocation;
-	@get('/code')
-`
-
 func PlaygroundPage(state PageState) Node {
 	return Div(
 		Class("playground-shell"),
-		Data("effect__debounce.150ms", urlSignalsEffect),
-
-		Div(Class("playground-form"), Data("effect__debounce.150ms", codeRefreshEffect),
+		Div(Class("playground-form"),
 			HeaderBar(),
 			QueryCard(state.Form),
 			SearchTypeCard(state.Form),
@@ -251,11 +196,30 @@ func HeaderBar() Node {
 	)
 }
 
+func effectSyncQueryParamAndGetCode(signal, param, defaultValue string) Node {
+	value := "$" + signal
+	return Group([]Node{
+		Data("effect", fmt.Sprint(`
+			if (`, value, ` !== `, defaultValue, `) {
+				syncQueryParam('`, param, `', `, value, `)
+			}
+		`)),
+		Data("effect__debounce.150ms", fmt.Sprint(`
+			`, value, `;
+			@get('/code')
+		`)),
+	})
+}
+
 func QueryCard(form SearchForm) Node {
 	return Section(Class("query-block"),
 		Label(Class("field-label"), Text("Query")),
 		Div(Class("query-card"),
-			Textarea(Class("query-input"), Rows("2"), Data("bind:query", ""), Text(form.Query)),
+			Textarea(Class("query-input"), Rows("2"),
+				Data("bind:query", ""),
+				effectSyncQueryParamAndGetCode("query", "query", strconv.Quote("Latest news on Nvidia")),
+				Text(form.Query),
+			),
 			Div(Class("query-footer"),
 				Span(),
 				Button(Type("button"), Class("primary-button"), Data("on:click", "@post('/search')"), Text("Search ↵")),
@@ -280,17 +244,18 @@ func SearchTypeCard(form SearchForm) Node {
 func SimpleFields(form SearchForm) Node {
 	return Div(Class("field-stack"),
 		FieldRow("Number of results", "Max: 100. Contact us for more results.", Input(
-			Type("text"),
+			Type("number"),
 			Value(strconv.Itoa(int(form.NumResults))),
 			Class("text-input"),
 			Data("bind:num-results", ""),
+			effectSyncQueryParamAndGetCode("numResults", "numResults", "10"),
 		)),
 		FieldRow("Result category", "", CategorySelect(form.Category)),
 	)
 }
 
 func CategorySelect(category string) Node {
-	return Select(Class("select-input"), Data("bind:category", ""),
+	return Select(Class("select-input"), Data("bind:category", ""), effectSyncQueryParamAndGetCode("category", "category", strconv.Quote("company")),
 		CategoryOption(category, "", "—"),
 		CategoryOption(category, "company", "Company"),
 		CategoryOption(category, "research paper", "Research Paper"),
@@ -309,16 +274,17 @@ func CategoryOption(current string, value string, label string) Node {
 func ContentsSection(form SearchForm) Node {
 	return Section(Class("section contents-section"),
 		H2(Class("section-heading"), Text("Contents")),
-		ToggleRow("Structured outputs", "Return structured outputs in addition to search results.", "structuredOutputs", form.StructuredOutputs),
+		ToggleRow("Structured outputs", "Return structured outputs in addition to search results.", "structuredOutputs", form.StructuredOutputs, effectSyncQueryParamAndGetCode("structuredOutputs", "structuredOutputs", "false")),
 		StructuredOutputFields(form),
-		ToggleRow("Highlights", "Token efficient page excerpts", "highlights", form.Highlights),
+		ToggleRow("Highlights", "Token efficient page excerpts", "highlights", form.Highlights, effectSyncQueryParamAndGetCode("highlights", "highlights", "true")),
 		NestedFields("highlights", form.Highlights,
 			FieldRow("Max characters", "", Input(
-				Type("text"),
+				Type("number"),
 				Placeholder("Default: 4000"),
 				Class("text-input"),
 				Value(strconv.Itoa(int(form.HighlightMaxCharacters))),
 				Data("bind:highlight-max-characters", ""),
+				effectSyncQueryParamAndGetCode("highlightMaxCharacters", "highlightMaxCharacters", "4000"),
 				Data("attr:disabled", "!$highlights"),
 				If(!form.Highlights, Disabled()),
 			)),
@@ -330,22 +296,24 @@ func ContentsSection(form SearchForm) Node {
 					Class("text-input"),
 					Value(form.HighlightQuery),
 					Data("bind:highlight-query", ""),
+					effectSyncQueryParamAndGetCode("highlightQuery", "highlightQuery", "''"),
 					Data("attr:disabled", "!$highlights"),
 					If(!form.Highlights, Disabled()),
 				),
 			),
 		),
-		ToggleRow("Full webpage text", "", "text", form.Text),
+		ToggleRow("Full webpage text", "", "text", form.Text, effectSyncQueryParamAndGetCode("text", "text", "false")),
 		NestedFields("text", form.Text,
 			FieldRow("Max characters", "", Input(
-				Type("text"),
+				Type("number"),
 				Value(strconv.Itoa(int(form.TextMaxCharacters))),
 				Data("bind:text-max-characters", ""),
+				effectSyncQueryParamAndGetCode("textMaxCharacters", "textMaxCharacters", "20000"),
 				Data("attr:disabled", "!$text"),
 				If(!form.Text, Disabled()),
 				Class("text-input"),
 			)),
-			ToggleRowLabel(LabelWithTooltip("Main content only", Text("Only return the main content of the page, excluding navbars, banners, footers, and similar page chrome.")), "", "textMainContentOnly", form.TextMainContentOnly),
+			ToggleRowLabel(LabelWithTooltip("Main content only", Text("Only return the main content of the page, excluding navbars, banners, footers, and similar page chrome.")), "", "textMainContentOnly", form.TextMainContentOnly, effectSyncQueryParamAndGetCode("textMainContentOnly", "textMainContentOnly", "true")),
 		),
 		Div(Class("subsection"),
 			Div(Class("copy"), Strong(Text("Livecrawl")), P(Class("muted"), Text("Manage content freshness"))),
@@ -355,12 +323,14 @@ func ContentsSection(form SearchForm) Node {
 					"hr",
 					"max-age-hours",
 					signalIntValue(form.MaxAgeHours),
+					effectSyncQueryParamAndGetCode("maxAgeHours", "maxAgeHours", "''"),
 				)),
 				FieldRowLabel(LabelWithTooltip("Livecrawl timeout", Text("Maximum time to wait for live crawling before giving up.")), "", UnitInput(
 					"Max: 30000",
 					"ms",
 					"livecrawl-timeout",
 					strconv.Itoa(int(form.LivecrawlTimeout)),
+					effectSyncQueryParamAndGetCode("livecrawlTimeout", "livecrawlTimeout", "10000"),
 				)),
 			),
 		),
@@ -373,12 +343,13 @@ func StructuredOutputFields(form SearchForm) Node {
 		style = ""
 	}
 	return Div(Class("nested-fields"), Data("show", "$structuredOutputs"), Attr("style", style),
-		ToggleRow("Stream response", "Return OpenAI-compatible SSE chunks as they arrive.", "streamResponse", form.StreamResponse),
-		ToggleRow("System prompt", "Instructions for synthesized output.", "systemPromptEnabled", form.SystemPromptEnabled),
+		ToggleRow("Stream response", "Return OpenAI-compatible SSE chunks as they arrive.", "streamResponse", form.StreamResponse, effectSyncQueryParamAndGetCode("streamResponse", "streamResponse", "false")),
+		ToggleRow("System prompt", "Instructions for synthesized output.", "systemPromptEnabled", form.SystemPromptEnabled, effectSyncQueryParamAndGetCode("systemPromptEnabled", "systemPromptEnabled", "false")),
 		FieldRow("Prompt", "", Textarea(
 			Class("text-input prompt-input"),
 			Rows("3"),
 			Data("bind:system-prompt", ""),
+			effectSyncQueryParamAndGetCode("systemPrompt", "systemPrompt", "''"),
 			Data("attr:disabled", "!$systemPromptEnabled"),
 			If(!form.SystemPromptEnabled, Disabled()),
 			Text(form.SystemPrompt),
@@ -395,6 +366,7 @@ func FiltersSection(form SearchForm) Node {
 			Placeholder("e.g. exa.ai, docs.exa.ai/reference"),
 			Class("text-input"),
 			Data("bind:include-domains", ""),
+			effectSyncQueryParamAndGetCode("includeDomains", "includeDomains", "''"),
 		)),
 		FieldRow("Exclude domains", "", Input(
 			Type("text"),
@@ -402,18 +374,21 @@ func FiltersSection(form SearchForm) Node {
 			Placeholder("e.g. reddit.com, twitter.com"),
 			Class("text-input"),
 			Data("bind:exclude-domains", ""),
+			effectSyncQueryParamAndGetCode("excludeDomains", "excludeDomains", "''"),
 		)),
 		FieldRow("Published after", "", Input(
 			Type("date"),
 			Value(form.StartPublishedDate),
 			Class("text-input"),
 			Data("bind:start-published-date", ""),
+			effectSyncQueryParamAndGetCode("startPublishedDate", "startPublishedDate", "''"),
 		)),
 		FieldRow("Published before", "", Input(
 			Type("date"),
 			Value(form.EndPublishedDate),
 			Class("text-input"),
 			Data("bind:end-published-date", ""),
+			effectSyncQueryParamAndGetCode("endPublishedDate", "endPublishedDate", "''"),
 		)),
 		FieldRow("User location", "Two-letter ISO country code", Input(
 			Type("text"),
@@ -422,6 +397,7 @@ func FiltersSection(form SearchForm) Node {
 			MaxLength("2"),
 			Class("text-input"),
 			Data("bind:user-location", ""),
+			effectSyncQueryParamAndGetCode("userLocation", "userLocation", "''"),
 		)),
 	)
 }
@@ -440,23 +416,24 @@ func FieldRowLabel(label Node, description string, control Node) Node {
 	)
 }
 
-func ToggleRow(title string, description string, signal string, on bool) Node {
-	return ToggleRowLabel(Text(title), description, signal, on)
+func ToggleRow(title string, description string, signal string, on bool, children ...Node) Node {
+	return ToggleRowLabel(Text(title), description, signal, on, children...)
 }
 
-func ToggleRowLabel(title Node, description string, signal string, on bool) Node {
+func ToggleRowLabel(title Node, description string, signal string, on bool, children ...Node) Node {
 	return Div(Class("toggle-row"),
 		Div(Class("copy"), Strong(title), If(description != "", P(Class("muted"), Text(description)))),
-		Toggle(signal, on),
+		Toggle(signal, on, children...),
 	)
 }
 
-func Toggle(signal string, on bool) Node {
+func Toggle(signal string, on bool, children ...Node) Node {
 	return Button(
 		Type("button"),
 		Class(toggleClass(on)),
 		Data("on:click", "$"+signal+" = !$"+signal),
 		Data("class:is-on", "$"+signal),
+		Group(children),
 		Span(),
 	)
 }
@@ -466,12 +443,11 @@ func NestedFields(signal string, enabled bool, nodes ...Node) Node {
 	if signal != "" && !enabled {
 		class += " disabled-nest"
 	}
-	attrs := []Node{Class(class)}
-	if signal != "" {
-		attrs = append(attrs, Data("class:disabled-nest", "!$"+signal))
-	}
-	attrs = append(attrs, Group(nodes))
-	return Div(attrs...)
+	return Div(
+		Class(class),
+		If(signal != "", Data("class:disabled-nest", "!$"+signal)),
+		Group(nodes),
+	)
 }
 
 func toggleClass(on bool) string {
@@ -481,8 +457,15 @@ func toggleClass(on bool) string {
 	return "toggle"
 }
 
-func UnitInput(placeholder string, unit string, signal string, value string) Node {
-	return Div(Class("unit-input"), Input(Type("text"), Value(value), Placeholder(placeholder), Class("text-input"), Data("bind:"+signal, "")), Span(Text(unit)))
+func UnitInput(placeholder string, unit string, signal string, value string, children ...Node) Node {
+	return Div(Class("unit-input"), Input(
+		Type("number"),
+		Value(value),
+		Placeholder(placeholder),
+		Class("text-input"),
+		Data("bind:"+signal, ""),
+		Group(children),
+	), Span(Text(unit)))
 }
 
 func signalIntValue(value SignalInt) string {
