@@ -241,7 +241,10 @@ const codeRefreshEffect = `
 `
 
 func PlaygroundPage(state PageState) Node {
-	return Div(Class("playground-shell"), Data("effect__debounce.150ms", urlSignalsEffect),
+	return Div(
+		Class("playground-shell"),
+		Data("effect__debounce.150ms", urlSignalsEffect),
+
 		Div(Class("playground-form"), Data("effect__debounce.150ms", codeRefreshEffect),
 			HeaderBar(),
 			QueryCard(state.Form),

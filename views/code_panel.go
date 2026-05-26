@@ -155,12 +155,14 @@ type CodePanelData struct {
 }
 
 func CodePanel(state PageState) Node {
-	return Aside(Class("code-panel"), CodePanelContent(CodePanelData{
-		Form:      state.Form,
-		PanelTab:  state.PanelTab,
-		CodeTab:   state.CodeTab,
-		OutputTab: state.OutputTab,
-	}))
+	return Aside(Class("code-panel"),
+		CodePanelContent(CodePanelData{
+			Form:      state.Form,
+			PanelTab:  state.PanelTab,
+			CodeTab:   state.CodeTab,
+			OutputTab: state.OutputTab,
+		}),
+	)
 }
 
 func CodePanelContent(data CodePanelData) Node {
