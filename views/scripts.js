@@ -33,6 +33,8 @@ function setSearchTypeValue(root, value, snap) {
     input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
+window.setSearchTypeValue = setSearchTypeValue
+
 /**
  * @param {HTMLElement} root
  * @param {number} index
@@ -72,8 +74,6 @@ function currentSearchTypePercent(root) {
     if (Number.isNaN(parsed)) return 0
     return parsed
 }
-
-window.setSearchTypeValue = setSearchTypeValue
 
 /**
  * @param {number} pct
@@ -247,6 +247,7 @@ function initTooltip(element) {
 
     tippy(element, {
         content: element.dataset.tooltip ?? '',
+        allowHTML: true,
         arrow: true,
         delay: [120, 0],
         interactive: true,

@@ -1,6 +1,8 @@
 package views
 
 import (
+	"bytes"
+
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -31,19 +33,30 @@ var _ = styles.Style(`
 		line-height: var(--font-lineheight-2);
 	}
 	.tippy-box[data-theme~='exa'] .tippy-arrow { color: #0f172a; }
+	.tippy-box[data-theme~='exa'] a {
+		color: white;
+		text-decoration: underline dotted;
+		text-underline-offset: 3px;
+	}
 `)
 
-func Tooltip(content string) Node {
+func Tooltip(ariaLabel string, content ...Node) Node {
 	return Button(
 		Type("button"),
 		Class("tooltip-trigger"),
-		Data("tooltip", content),
+		Data("tooltip", renderTooltipContent(content...)),
 		Data("init", "initTooltip(el)"),
-		Attr("aria-label", content),
+		Attr("aria-label", ariaLabel),
 		Text("ⓘ"),
 	)
 }
 
-func LabelWithTooltip(label string, tooltip string) Node {
-	return Span(Class("label-with-tooltip"), Text(label), Tooltip(tooltip))
+func LabelWithTooltip(label string, tooltip ...Node) Node {
+	return Span(Class("label-with-tooltip"), Text(label), Tooltip(label+" help", tooltip...))
+}
+
+func renderTooltipContent(content ...Node) string {
+	var b bytes.Buffer
+	Group(content).Render(&b)
+	return b.String()
 }

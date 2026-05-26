@@ -287,7 +287,13 @@ func QueryCard(form SearchForm) Node {
 
 func SearchTypeCard(form SearchForm) Node {
 	return Section(Class("section"),
-		H2(Class("section-title"), Text("Search Type ⓘ")),
+		H2(Class("section-title"), LabelWithTooltip("Search Type",
+			A(Href("https://exa.ai/docs/reference/search-api-guide-for-coding-agents#search-types"), Target("_blank"), Rel("noreferrer"),
+				Text("See docs"),
+			),
+			Text(" for more details"),
+		)),
+
 		SearchTypeSlider(form),
 	)
 }
@@ -337,15 +343,18 @@ func ContentsSection(form SearchForm) Node {
 				Data("attr:disabled", "!$highlights"),
 				If(!form.Highlights, Disabled()),
 			)),
-			FieldRowLabel(LabelWithTooltip("Guiding query", "Optional natural language description of what to have highlights focus on."), "", Input(
-				Type("text"),
-				Placeholder("e.g. key takeaways"),
-				Class("text-input"),
-				Value(form.HighlightQuery),
-				Data("bind:highlight-query", ""),
-				Data("attr:disabled", "!$highlights"),
-				If(!form.Highlights, Disabled()),
-			)),
+			FieldRowLabel(
+				LabelWithTooltip("Guiding query", Text("Optional natural language description of what to have highlights focus on.")), "",
+				Input(
+					Type("text"),
+					Placeholder("e.g. key takeaways"),
+					Class("text-input"),
+					Value(form.HighlightQuery),
+					Data("bind:highlight-query", ""),
+					Data("attr:disabled", "!$highlights"),
+					If(!form.Highlights, Disabled()),
+				),
+			),
 		),
 		ToggleRow("Full webpage text", "", "text", form.Text),
 		NestedFields("text", form.Text,
@@ -357,18 +366,18 @@ func ContentsSection(form SearchForm) Node {
 				If(!form.Text, Disabled()),
 				Class("text-input"),
 			)),
-			ToggleRowLabel(LabelWithTooltip("Main content only", "Only return the main content of the page, excluding navbars, banners, footers, and similar page chrome."), "", "textMainContentOnly", form.TextMainContentOnly),
+			ToggleRowLabel(LabelWithTooltip("Main content only", Text("Only return the main content of the page, excluding navbars, banners, footers, and similar page chrome.")), "", "textMainContentOnly", form.TextMainContentOnly),
 		),
 		Div(Class("subsection"),
 			Div(Class("copy"), Strong(Text("Livecrawl")), P(Class("muted"), Text("Manage content freshness"))),
 			NestedFields("", true,
-				FieldRowLabel(LabelWithTooltip("Max age", "Max age of cached content before livecrawl. 0 = always livecrawl. -1 = never livecrawl (cache only)."), "", UnitInput(
+				FieldRowLabel(LabelWithTooltip("Max age", Text("Max age of cached content before livecrawl. 0 = always livecrawl. -1 = never livecrawl (cache only).")), "", UnitInput(
 					"Default: cache only",
 					"hr",
 					"max-age-hours",
 					signalIntValue(form.MaxAgeHours),
 				)),
-				FieldRowLabel(LabelWithTooltip("Livecrawl timeout", "Maximum time to wait for live crawling before giving up."), "", UnitInput(
+				FieldRowLabel(LabelWithTooltip("Livecrawl timeout", Text("Maximum time to wait for live crawling before giving up.")), "", UnitInput(
 					"Max: 30000",
 					"ms",
 					"livecrawl-timeout",
