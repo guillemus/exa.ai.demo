@@ -163,30 +163,6 @@ var _ = styles.Style(`
 `)
 
 const urlSignalsEffect = `
-	$query;
-	$panelTab;
-	$codeTab;
-	$outputTab;
-	$searchType;
-	$deepModel;
-	$numResults;
-	$category;
-	$structuredOutputs;
-	$streamResponse;
-	$systemPromptEnabled;
-	$systemPrompt;
-	$highlights;
-	$highlightMaxCharacters;
-	$highlightQuery;
-	$text;
-	$textMaxCharacters;
-	$maxAgeHours;
-	$livecrawlTimeout;
-	$includeDomains;
-	$excludeDomains;
-	$startPublishedDate;
-	$endPublishedDate;
-	$userLocation;
 	syncSignalsToURL({
 		query: $query,
 		panelTab: $panelTab,
